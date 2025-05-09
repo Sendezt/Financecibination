@@ -8,6 +8,7 @@ const addAccountHandler = require("./routes/rekeningRoute");
 const financeHandler = require("./routes/financeRoute");
 const cleanUpHandler = require("./routes/cleanUpRoute");
 const mutasiAccountHandler = require("./routes/mutasiRoute");
+const getSaldo = require("./routes/getSaldoRoute");
 
 const app = express();
 const PORT = process.env.PORT;
@@ -39,6 +40,7 @@ app.use("/api/tambahRekening", addAccountHandler);
 app.use("/api/finance", financeHandler);
 app.use("/api/cleanUp", cleanUpHandler);
 app.use("/api/mutasi", mutasiAccountHandler);
+app.use("/api/getSaldo", getSaldo);
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

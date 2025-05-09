@@ -1,4 +1,5 @@
 const supabase = require("../middleware/supabaseClient");
+const { DateTime, Zone } = require("luxon");
 
 const mutasiMingguanHandler = async (req, res) => {
   const { wa_number } = req.query;
@@ -49,8 +50,8 @@ const mutasiMingguanHandler = async (req, res) => {
       .from("finance")
       .select("*")
       .in("account_id", accountIds)
-      .gte("date", fromDate)
-      .order("date", { ascending: false });
+      .gte("created_at", fromDate)
+      .order("created_at", { ascending: false });
 
     if (finError) {
       return res
@@ -62,6 +63,9 @@ const mutasiMingguanHandler = async (req, res) => {
     const dataWithAccountNames = finance.map((item) => ({
       ...item,
       account_name: accountIdToName[item.account_id] || "Tidak diketahui",
+      date_indonesia: DateTime.fromISO(item.created_at, { zone: "utc" })
+        .setZone("Asia/Jakarta")
+        .toFormat("yyyy-MM-dd HH:mm:ss"),
     }));
 
     res.status(200).json({

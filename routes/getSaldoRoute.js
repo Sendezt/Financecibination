@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const cleanUpHandler = require("../models/cleanUpHandler");
+const getSaldo = require("../models/getSaldoHandler");
 
-router.post("/", cleanUpHandler);
+router.get("/", getSaldo);
 
 module.exports = router;

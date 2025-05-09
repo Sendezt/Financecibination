@@ -1,7 +1,7 @@
 const supabase = require("../middleware/supabaseClient");
 
 const tambahPemasukanHandler = async (req, res) => {
-  const { account_id, amount, note, date, wa_number } = req.body;
+  const { account_id, amount, note, created_at, wa_number } = req.body;
 
   try {
     // Validasi input
@@ -45,15 +45,19 @@ const tambahPemasukanHandler = async (req, res) => {
       .insert([
         {
           account_id: account.id,
-          amount,
+          amount: Number(amount),
           mutation_type: "masuk",
           note,
-          date: date || new Date().toISOString().split("T")[0],
+          created_at: created_at || new Date().toISOString(),
         },
       ])
+      .select()
       .single();
 
-    if (error) {
+    console.log("Data yang dimasukkan:", data);
+
+    if (error || !data) {
+      console.error("Error inserting data:", error);
       return res
         .status(500)
         .json({ message: "Gagal menambahkan pemasukan", error });
@@ -62,7 +66,10 @@ const tambahPemasukanHandler = async (req, res) => {
     res.status(201).json({
       status: true,
       message: "Pemasukan berhasil ditambahkan",
-      data,
+      data: {
+        amount: data.amount,
+        note: data.note,
+      },
     });
   } catch (err) {
     console.error("Error:", err);
