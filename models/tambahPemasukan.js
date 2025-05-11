@@ -1,29 +1,15 @@
 const supabase = require("../middleware/supabaseClient");
 
 const tambahPemasukanHandler = async (req, res) => {
-  const { account_id, amount, note, created_at, wa_number } = req.body;
+  const { account_id, amount, note, created_at, user_id } = req.body;
 
   try {
     // Validasi input
-    if (!account_id || !amount || !wa_number) {
-      return res
-        .status(400)
-        .json({ message: "Account ID, jumlah dan WA number wajib diisi." });
+    if (!account_id || !amount || !user_id) {
+      return res.status(400).json({
+        message: "Account ID, jumlah dan user ID wajib diisi.",
+      });
     }
-
-    // Ambil user_id berdasarkan wa_number
-    const { data: userIdResult, error: userIdError } = await supabase.rpc(
-      "get_user_id_by_wa",
-      { input_wa: wa_number }
-    );
-
-    if (userIdError || !userIdResult) {
-      return res
-        .status(404)
-        .json({ message: "User tidak ditemukan berdasarkan WA number." });
-    }
-
-    const user_id = userIdResult;
 
     // Cek apakah rekening dimiliki oleh user ini
     const { data: account, error: accountError } = await supabase
@@ -58,9 +44,10 @@ const tambahPemasukanHandler = async (req, res) => {
 
     if (error || !data) {
       console.error("Error inserting data:", error);
-      return res
-        .status(500)
-        .json({ message: "Gagal menambahkan pemasukan", error });
+      return res.status(500).json({
+        message: "Gagal menambahkan pemasukan",
+        error,
+      });
     }
 
     res.status(201).json({
@@ -69,6 +56,7 @@ const tambahPemasukanHandler = async (req, res) => {
       data: {
         amount: data.amount,
         note: data.note,
+        created_at: data.created_at,
       },
     });
   } catch (err) {

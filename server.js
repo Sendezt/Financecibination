@@ -28,7 +28,14 @@ app.get("/", (req, res) => {
   res.json({
     status: true,
     message: "Welcome to Sendezt API",
-    endpoints: ["/api/auth"],
+    endpoints: [
+      "/api/auth",
+      "api/tambahRekening",
+      "/api/finance",
+      "/api/cleanUp",
+      "/api/mutasi",
+      "/api/getSaldo",
+    ],
     serverTime: new Date(Date.now()).toLocaleString("id-ID", {
       timeZone: "Asia/Jakarta",
     }),

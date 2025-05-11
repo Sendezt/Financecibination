@@ -1,28 +1,13 @@
 const supabase = require("../middleware/supabaseClient");
-const { DateTime, Zone } = require("luxon");
+const { DateTime } = require("luxon");
 
 const mutasiMingguanHandler = async (req, res) => {
-  const { wa_number } = req.query;
+  const { user_id } = req.query;
 
   try {
-    if (!wa_number) {
-      return res.status(400).json({ message: "WA number wajib diisi." });
+    if (!user_id) {
+      return res.status(400).json({ message: "User ID wajib diisi." });
     }
-
-    // Ambil user_id berdasarkan wa_number
-    const { data: user, error: userError } = await supabase
-      .from("pengguna")
-      .select("id")
-      .eq("wa_number", wa_number)
-      .single();
-
-    if (userError || !user) {
-      return res
-        .status(404)
-        .json({ message: "User tidak ditemukan berdasarkan WA number." });
-    }
-
-    const user_id = user.id;
 
     // Ambil semua account milik user
     const { data: accounts, error: accError } = await supabase
