@@ -1,27 +1,29 @@
 const supabase = require("../middleware/supabaseClient");
 
 const tambahPengeluaranHandler = async (req, res) => {
-  const { account_id, amount, note, created_at, user_id } = req.body;
+  const { name, amount, note, created_at } = req.body;
+  const user_id = req.user?.id; // Ambil user_id dari token yang sudah diverifikasi
 
   try {
     // Validasi input
-    if (!account_id || !amount || !user_id) {
+    if (!name || !amount || !user_id) {
       return res.status(400).json({
-        message: "Account ID, jumlah, dan User ID wajib diisi.",
+        message: "Nama rekening, jumlah, dan User ID wajib diisi.",
       });
     }
 
-    // Cek apakah rekening dimiliki oleh user ini
+    // Cek apakah rekening dengan nama tersebut dimiliki oleh user ini
     const { data: account, error: accountError } = await supabase
       .from("accounts")
       .select("id, user_id")
-      .eq("id", account_id)
+      .eq("name", name)
       .eq("user_id", user_id)
-      .single();
+      .single(); // Mengambil satu akun berdasarkan nama dan user_id
 
     if (accountError || !account) {
       return res.status(404).json({
-        message: "Rekening tidak ditemukan atau tidak dimiliki oleh user.",
+        message:
+          "Rekening dengan nama tersebut tidak ditemukan atau tidak dimiliki oleh user.",
       });
     }
 

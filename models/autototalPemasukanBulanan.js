@@ -1,38 +1,23 @@
 const supabase = require("../middleware/supabaseClient");
 
-function getWeekRangeFromDate(date) {
-  const year = date.getFullYear();
-  const month = date.getMonth(); // 0-based
-  const day = date.getDate();
-
-  const firstDayOfMonth = new Date(year, month, 1);
-  const dayOfWeek = firstDayOfMonth.getDay(); // 0:Sunday, 1:Monday, ...
-  const adjustedDayOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-
-  const daysSinceFirst = day - 1;
-  const week = Math.floor((daysSinceFirst + adjustedDayOfWeek) / 7) + 1;
-
-  const offset = (week - 1) * 7 - adjustedDayOfWeek;
-  const start = new Date(firstDayOfMonth);
-  start.setDate(firstDayOfMonth.getDate() + offset);
-
-  const end = new Date(start);
-  end.setDate(start.getDate() + 7);
-
-  return { start, end, week, month: month + 1, year };
-}
-
-const getTotalPemasukanMingguanByUserHandler = async (req, res) => {
-  const { user_id } = req.query;
+const getPemasukanByUserHandler = async (req, res) => {
+  const user_id = req.user?.id; // Ambil user_id dari token yang terautentikasi
 
   if (!user_id) {
-    return res.status(400).json({ message: "Parameter user_id wajib diisi." });
+    return res.status(400).json({ message: "User ID wajib diisi." });
   }
 
-  const today = new Date();
-  const { start, end, week, month, year } = getWeekRangeFromDate(today);
-
   try {
+    const today = new Date();
+    const month = today.getMonth() + 1; // Bulan saat ini (1-12)
+    const year = today.getFullYear(); // Tahun saat ini
+
+    // Tentukan rentang waktu bulan berjalan (dari 1 hingga akhir bulan)
+    const startDate = new Date(`${year}-${month}-01`);
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + 1); // Awal bulan berikutnya
+
+    // Ambil semua account milik user_id
     const { data: accounts, error: accountError } = await supabase
       .from("accounts")
       .select("id, name")
@@ -48,14 +33,15 @@ const getTotalPemasukanMingguanByUserHandler = async (req, res) => {
     let total_pemasukan_user = 0;
     const result = [];
 
+    // Loop setiap account untuk hitung pemasukan
     for (const account of accounts) {
       const { data: pemasukan, error } = await supabase
         .from("finance")
         .select("amount, created_at")
         .eq("account_id", account.id)
         .eq("mutation_type", "masuk")
-        .gte("created_at", start.toISOString())
-        .lt("created_at", end.toISOString());
+        .gte("created_at", startDate.toISOString())
+        .lt("created_at", endDate.toISOString());
 
       if (error) {
         return res
@@ -73,7 +59,7 @@ const getTotalPemasukanMingguanByUserHandler = async (req, res) => {
       result.push({
         account_id: account.id,
         nama_rekening: account.name,
-        total_pemasukan: total_pemasukan,
+        total_pemasukan,
       });
     }
 
@@ -82,11 +68,6 @@ const getTotalPemasukanMingguanByUserHandler = async (req, res) => {
       user_id,
       bulan: month,
       tahun: year,
-      minggu: week,
-      rentang_tanggal: {
-        start: start.toISOString().split("T")[0],
-        end: end.toISOString().split("T")[0],
-      },
       data: result,
       total_pemasukan_user,
     });
@@ -96,4 +77,4 @@ const getTotalPemasukanMingguanByUserHandler = async (req, res) => {
   }
 };
 
-module.exports = getTotalPemasukanMingguanByUserHandler;
+module.exports = getPemasukanByUserHandler;

@@ -1,7 +1,8 @@
 const supabase = require("../middleware/supabaseClient");
 
 const getPengeluaranByUserHandler = async (req, res) => {
-  const { user_id, month, year } = req.query;
+  const { month, year } = req.query;
+  const user_id = req.user?.id; // Ambil user_id dari token yang terautentikasi
 
   if (!user_id) {
     return res.status(400).json({ message: "User ID wajib diisi." });

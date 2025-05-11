@@ -15,7 +15,8 @@ function getWeekRange(year, month, week) {
 }
 
 const getTotalPemasukanMingguanByUserHandler = async (req, res) => {
-  const { user_id, month, year, week } = req.query;
+  const { month, year, week } = req.query;
+  const user_id = req.user?.id; // Ambil user_id dari token yang terautentikasi
 
   if (!user_id || !month || !year || !week) {
     return res.status(400).json({ message: "Semua parameter wajib diisi." });

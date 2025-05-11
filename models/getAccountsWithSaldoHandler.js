@@ -1,14 +1,13 @@
 const supabase = require("../middleware/supabaseClient");
 
-const getSaldoByUserIdHandler = async (req, res) => {
-  const user_id = req.user?.id; // Ambil user ID dari token
+const getAccountsWithSaldoHandler = async (req, res) => {
+  const user_id = req.user?.id;
 
   try {
     if (!user_id) {
       return res.status(401).json({ message: "User tidak terautentikasi." });
     }
 
-    // Ambil semua akun milik user
     const { data: accounts, error: accError } = await supabase
       .from("accounts")
       .select("id, name, saldo, last_updated")
@@ -23,23 +22,19 @@ const getSaldoByUserIdHandler = async (req, res) => {
       return res.status(404).json({ message: "Tidak ada akun ditemukan." });
     }
 
-    const accountIdToName = {};
     const saldoPerAccount = {};
 
     accounts.forEach((account) => {
-      accountIdToName[account.id] = account.name;
       saldoPerAccount[account.id] = {
         account_id: account.id,
         account_name: account.name || "Tidak diketahui",
-        total_masuk: 0,
-        total_keluar: 0,
         saldo_awal: parseFloat(account.saldo) || 0,
         saldo_akhir: parseFloat(account.saldo) || 0,
         last_updated: account.last_updated,
       };
     });
 
-    const accountIds = Object.keys(accountIdToName);
+    const accountIds = Object.keys(saldoPerAccount);
 
     for (const accountId of accountIds) {
       const lastUpdated =
@@ -47,7 +42,7 @@ const getSaldoByUserIdHandler = async (req, res) => {
 
       const { data: finance, error: finError } = await supabase
         .from("finance")
-        .select("account_id, amount, mutation_type, created_at")
+        .select("amount, mutation_type, created_at")
         .eq("account_id", accountId)
         .gt("created_at", lastUpdated);
 
@@ -63,10 +58,8 @@ const getSaldoByUserIdHandler = async (req, res) => {
         finance.forEach((item) => {
           const amount = parseFloat(item.amount) || 0;
           if (item.mutation_type === "masuk") {
-            saldoPerAccount[accountId].total_masuk += amount;
             saldoPerAccount[accountId].saldo_akhir += amount;
           } else if (item.mutation_type === "keluar") {
-            saldoPerAccount[accountId].total_keluar += amount;
             saldoPerAccount[accountId].saldo_akhir -= amount;
           }
         });
@@ -81,33 +74,29 @@ const getSaldoByUserIdHandler = async (req, res) => {
           .eq("id", accountId);
 
         if (updateError) {
-          console.error(
-            `Error saat memperbarui saldo akun ${accountId}:`,
-            updateError
-          );
+          console.error(`Gagal update saldo akun ${accountId}:`, updateError);
         } else {
           saldoPerAccount[accountId].last_updated = now;
         }
       }
     }
 
+    // Hanya kirim data yang diperlukan
     const responseData = Object.values(saldoPerAccount).map((account) => ({
       account_id: account.account_id,
       account_name: account.account_name,
-      total_masuk: account.total_masuk,
-      total_keluar: account.total_keluar,
       saldo: account.saldo_akhir,
     }));
 
     res.status(200).json({
       status: true,
-      message: "Data saldo per akun",
+      message: "Data rekening berhasil diambil",
       data: responseData,
     });
   } catch (err) {
     console.error("Error:", err);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: "Terjadi kesalahan server" });
   }
 };
 
-module.exports = getSaldoByUserIdHandler;
+module.exports = getAccountsWithSaldoHandler;

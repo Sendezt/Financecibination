@@ -1,33 +1,40 @@
 const supabase = require("../middleware/supabaseClient");
 
-function getWeekRange(year, month, week) {
-  const firstDayOfMonth = new Date(year, month - 1, 1);
-  const dayOfWeek = firstDayOfMonth.getDay(); // 0: Sunday, 1: Monday, ...
-  const offset = (week - 1) * 7 - (dayOfWeek === 0 ? 6 : dayOfWeek - 1);
+function getWeekRangeFromDate(date) {
+  const year = date.getFullYear();
+  const month = date.getMonth(); // 0-based
+  const day = date.getDate();
 
+  const firstDayOfMonth = new Date(year, month, 1);
+  const dayOfWeek = firstDayOfMonth.getDay(); // 0: Sunday, 1: Monday, ...
+  const adjustedDayOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+  const daysSinceFirst = day - 1;
+  const week = Math.floor((daysSinceFirst + adjustedDayOfWeek) / 7) + 1;
+
+  const offset = (week - 1) * 7 - adjustedDayOfWeek;
   const start = new Date(firstDayOfMonth);
   start.setDate(firstDayOfMonth.getDate() + offset);
 
   const end = new Date(start);
   end.setDate(start.getDate() + 7);
 
-  return { start, end };
+  return { start, end, week, month: month + 1, year };
 }
 
-const getPengeluaranMingguanByUserHandler = async (req, res) => {
-  const { month, year, week } = req.query;
-  const user_id = req.user?.id; // Ambil user_id dari token yang terautentikasi
+const getTotalPengeluaranMingguanByUserHandler = async (req, res) => {
+  // Ambil user_id dari token autentikasi
+  const user_id = req.user?.id;
 
-  if (!user_id || !month || !year || !week) {
-    return res.status(400).json({
-      message: "Parameter user_id, month, year, dan week wajib diisi.",
-    });
+  if (!user_id) {
+    return res.status(400).json({ message: "User tidak terautentikasi." });
   }
 
-  const { start, end } = getWeekRange(parseInt(year), parseInt(month), parseInt(week));
+  const today = new Date();
+  const { start, end, week, month, year } = getWeekRangeFromDate(today);
 
   try {
-    // Ambil akun user
+    // Ambil akun pengguna
     const { data: accounts, error: accountError } = await supabase
       .from("accounts")
       .select("id, name")
@@ -43,6 +50,7 @@ const getPengeluaranMingguanByUserHandler = async (req, res) => {
     let total_pengeluaran_user = 0;
     const result = [];
 
+    // Hitung pengeluaran untuk setiap akun
     for (const account of accounts) {
       const { data: pengeluaran, error } = await supabase
         .from("finance")
@@ -53,10 +61,9 @@ const getPengeluaranMingguanByUserHandler = async (req, res) => {
         .lt("created_at", end.toISOString());
 
       if (error) {
-        return res.status(500).json({
-          message: "Gagal mengambil data finance",
-          error,
-        });
+        return res
+          .status(500)
+          .json({ message: "Gagal mengambil data finance", error });
       }
 
       const total_pengeluaran = pengeluaran.reduce(
@@ -69,10 +76,11 @@ const getPengeluaranMingguanByUserHandler = async (req, res) => {
       result.push({
         account_id: account.id,
         nama_rekening: account.name,
-        total_pengeluaran,
+        total_pengeluaran: total_pengeluaran,
       });
     }
 
+    // Kembalikan hasil
     res.status(200).json({
       status: true,
       user_id,
@@ -80,8 +88,8 @@ const getPengeluaranMingguanByUserHandler = async (req, res) => {
       tahun: year,
       minggu: week,
       rentang_tanggal: {
-        dari: start.toISOString().split("T")[0],
-        sampai: end.toISOString().split("T")[0],
+        start: start.toISOString().split("T")[0],
+        end: end.toISOString().split("T")[0],
       },
       data: result,
       total_pengeluaran_user,
@@ -92,4 +100,4 @@ const getPengeluaranMingguanByUserHandler = async (req, res) => {
   }
 };
 
-module.exports = getPengeluaranMingguanByUserHandler;
+module.exports = getTotalPengeluaranMingguanByUserHandler;

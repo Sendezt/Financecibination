@@ -2,11 +2,12 @@ const supabase = require("../middleware/supabaseClient");
 const { DateTime } = require("luxon");
 
 const mutasiMingguanHandler = async (req, res) => {
-  const { user_id } = req.query;
+  const user_id = req.user?.id; // Ambil user_id dari token yang sudah diverifikasi
 
   try {
+    // Pastikan user_id ada (jika token tidak valid atau tidak ada)
     if (!user_id) {
-      return res.status(400).json({ message: "User ID wajib diisi." });
+      return res.status(401).json({ message: "User tidak terautentikasi." });
     }
 
     // Ambil semua account milik user
