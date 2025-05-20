@@ -10,7 +10,6 @@ const cleanUpHandler = require("./routes/cleanUpRoute");
 const mutasiAccountHandler = require("./routes/mutasiRoute");
 const getSaldo = require("./routes/getSaldoRoute");
 const getAccount = require("./routes/accountRoute");
-
 const app = express();
 const PORT = process.env.PORT;
 
@@ -36,7 +35,7 @@ app.get("/", (req, res) => {
       "/api/cleanUp",
       "/api/mutasi",
       "/api/getSaldo",
-      "/api/getAccount"
+      "/api/getAccount",
     ],
     serverTime: new Date(Date.now()).toLocaleString("id-ID", {
       timeZone: "Asia/Jakarta",
