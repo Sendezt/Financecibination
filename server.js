@@ -2,7 +2,6 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const rateLimit = require("express-rate-limit");
-
 const authHandler = require("./routes/authRoute");
 const verifyToken = require("./middleware/verifyToken");
 const addAccountHandler = require("./routes/rekeningRoute");
@@ -11,8 +10,8 @@ const cleanUpHandler = require("./routes/cleanUpRoute");
 const mutasiAccountHandler = require("./routes/mutasiRoute");
 const getSaldo = require("./routes/getSaldoRoute");
 const getAccount = require("./routes/accountRoute");
-
 const app = express();
+const PORT = process.env.PORT;
 
 app.use(cors());
 app.use(express.json());
@@ -52,4 +51,6 @@ app.use("/api/mutasi", verifyToken, mutasiAccountHandler);
 app.use("/api/getSaldo", verifyToken, getSaldo);
 app.use("/api/getAccount", verifyToken, getAccount);
 
-module.exports = app;
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});
