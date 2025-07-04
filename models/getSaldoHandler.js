@@ -1,33 +1,33 @@
 const supabase = require("../middleware/supabaseClient");
 
 const getSaldoByUserIdHandler = async (req, res) => {
-  const user_id = req.user?.id; // Ambil user ID dari token
+  const user_id = req.user?.id;
 
   try {
     if (!user_id) {
       return res.status(401).json({ message: "User tidak terautentikasi." });
     }
 
-    // Ambil semua akun milik user
+    // Ambil semua akun user
     const { data: accounts, error: accError } = await supabase
       .from("accounts")
       .select("id, name, saldo, last_updated")
       .eq("user_id", user_id);
 
     if (accError) {
-      console.error("Error saat mengambil data akun:", accError);
-      return res.status(500).json({ message: "Gagal mengambil data akun" });
+      console.error("Error ambil akun:", accError);
+      return res.status(500).json({ message: "Gagal ambil akun." });
     }
 
     if (!accounts || accounts.length === 0) {
       return res.status(404).json({ message: "Tidak ada akun ditemukan." });
     }
 
-    const accountIdToName = {};
     const saldoPerAccount = {};
+    const accountIds = accounts.map((acc) => acc.id);
+    const now = new Date().toISOString();
 
     accounts.forEach((account) => {
-      accountIdToName[account.id] = account.name;
       saldoPerAccount[account.id] = {
         account_id: account.id,
         account_name: account.name || "Tidak diketahui",
@@ -35,78 +35,75 @@ const getSaldoByUserIdHandler = async (req, res) => {
         total_keluar: 0,
         saldo_awal: parseFloat(account.saldo) || 0,
         saldo_akhir: parseFloat(account.saldo) || 0,
-        last_updated: account.last_updated,
+        last_updated: account.last_updated || "1970-01-01",
       };
     });
 
-    const accountIds = Object.keys(accountIdToName);
+    // Ambil SEMUA transaksi untuk semua akun sekaligus
+    const { data: financeData, error: financeError } = await supabase
+      .from("finance")
+      .select("account_id, amount, mutation_type, created_at")
+      .in("account_id", accountIds);
 
-    for (const accountId of accountIds) {
-      const lastUpdated =
-        saldoPerAccount[accountId].last_updated || "1970-01-01";
+    if (financeError) {
+      console.error("Error ambil transaksi:", financeError);
+      return res.status(500).json({ message: "Gagal ambil transaksi." });
+    }
 
-      const { data: finance, error: finError } = await supabase
-        .from("finance")
-        .select("account_id, amount, mutation_type, created_at")
-        .eq("account_id", accountId)
-        .gt("created_at", lastUpdated);
+    // Proses semua transaksi
+    financeData?.forEach((item) => {
+      const acc = saldoPerAccount[item.account_id];
+      if (!acc) return;
 
-      if (finError) {
-        console.error(
-          `Error saat mengambil transaksi untuk akun ${accountId}:`,
-          finError
-        );
-        continue;
+      if (item.created_at <= acc.last_updated) return;
+
+      const amount = parseFloat(item.amount) || 0;
+      if (item.mutation_type === "masuk") {
+        acc.total_masuk += amount;
+        acc.saldo_akhir += amount;
+      } else if (item.mutation_type === "keluar") {
+        acc.total_keluar += amount;
+        acc.saldo_akhir -= amount;
       }
+    });
 
-      if (finance && finance.length > 0) {
-        finance.forEach((item) => {
-          const amount = parseFloat(item.amount) || 0;
-          if (item.mutation_type === "masuk") {
-            saldoPerAccount[accountId].total_masuk += amount;
-            saldoPerAccount[accountId].saldo_akhir += amount;
-          } else if (item.mutation_type === "keluar") {
-            saldoPerAccount[accountId].total_keluar += amount;
-            saldoPerAccount[accountId].saldo_akhir -= amount;
-          }
-        });
-
-        const now = new Date().toISOString();
+    // Update saldo jika berubah
+    for (const accId in saldoPerAccount) {
+      const acc = saldoPerAccount[accId];
+      if (acc.saldo_awal !== acc.saldo_akhir) {
         const { error: updateError } = await supabase
           .from("accounts")
           .update({
-            saldo: saldoPerAccount[accountId].saldo_akhir,
+            saldo: acc.saldo_akhir,
             last_updated: now,
           })
-          .eq("id", accountId);
+          .eq("id", accId);
 
         if (updateError) {
-          console.error(
-            `Error saat memperbarui saldo akun ${accountId}:`,
-            updateError
-          );
+          console.error(`Update gagal akun ${accId}:`, updateError);
         } else {
-          saldoPerAccount[accountId].last_updated = now;
+          acc.last_updated = now;
         }
       }
     }
 
-    const responseData = Object.values(saldoPerAccount).map((account) => ({
-      account_id: account.account_id,
-      account_name: account.account_name,
-      total_masuk: account.total_masuk,
-      total_keluar: account.total_keluar,
-      saldo: account.saldo_akhir,
+    // Kirim ke client
+    const responseData = Object.values(saldoPerAccount).map((acc) => ({
+      account_id: acc.account_id,
+      account_name: acc.account_name,
+      total_masuk: acc.total_masuk,
+      total_keluar: acc.total_keluar,
+      saldo: acc.saldo_akhir,
     }));
 
     res.status(200).json({
       status: true,
-      message: "Data saldo per akun",
+      message: "Data saldo berhasil diambil",
       data: responseData,
     });
   } catch (err) {
     console.error("Error:", err);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: "Terjadi kesalahan server" });
   }
 };
 
