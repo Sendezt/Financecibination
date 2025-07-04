@@ -8,84 +8,87 @@ const getAccountsWithSaldoHandler = async (req, res) => {
       return res.status(401).json({ message: "User tidak terautentikasi." });
     }
 
-    // Ambil semua akun milik user
+    // 1. Ambil semua akun milik user
     const { data: accounts, error: accError } = await supabase
       .from("accounts")
       .select("id, name, saldo, last_updated")
       .eq("user_id", user_id);
 
     if (accError) {
-      console.error("Error saat mengambil data akun:", accError);
+      console.error("Gagal mengambil akun:", accError);
       return res.status(500).json({ message: "Gagal mengambil data akun" });
     }
 
-    if (!accounts || accounts.length === 0) {
+    if (!accounts?.length) {
       return res.status(404).json({ message: "Tidak ada akun ditemukan." });
     }
 
-    const accountIds = accounts.map((acc) => acc.id);
+    const now = new Date().toISOString();
+    const accountMap = new Map();
+    const accountIds = [];
 
-    // Ambil semua transaksi untuk semua akun sekaligus
-    const { data: allFinance, error: allFinError } = await supabase
+    // 2. Siapkan data awal
+    accounts.forEach((acc) => {
+      accountIds.push(acc.id);
+      accountMap.set(acc.id, {
+        account_id: acc.id,
+        account_name: acc.name || "Tidak diketahui",
+        saldo_awal: parseFloat(acc.saldo) || 0,
+        saldo_akhir: parseFloat(acc.saldo) || 0,
+        last_updated: acc.last_updated || "1970-01-01",
+        has_update: false,
+      });
+    });
+
+    // 3. Ambil semua transaksi terkait akun-akun tersebut
+    const { data: financeData, error: finError } = await supabase
       .from("finance")
       .select("account_id, amount, mutation_type, created_at")
       .in("account_id", accountIds);
 
-    if (allFinError) {
-      console.error("Error saat mengambil transaksi:", allFinError);
+    if (finError) {
+      console.error("Gagal mengambil transaksi:", finError);
       return res.status(500).json({ message: "Gagal mengambil transaksi" });
     }
 
-    const saldoPerAccount = {};
-    const now = new Date().toISOString();
+    // 4. Proses semua transaksi (1 kali loop)
+    for (const item of financeData || []) {
+      const acc = accountMap.get(item.account_id);
+      if (!acc || item.created_at <= acc.last_updated) continue;
 
-    accounts.forEach((account) => {
-      const accountId = account.id;
-      const lastUpdated = account.last_updated || "1970-01-01";
-      const transaksiBaru = allFinance?.filter(
-        (tx) => tx.account_id === accountId && tx.created_at > lastUpdated
-      ) || [];
+      const amount = parseFloat(item.amount) || 0;
+      if (item.mutation_type === "masuk") {
+        acc.saldo_akhir += amount;
+      } else if (item.mutation_type === "keluar") {
+        acc.saldo_akhir -= amount;
+      }
+      acc.has_update = true;
+    }
 
-      let saldo_akhir = parseFloat(account.saldo) || 0;
-
-      transaksiBaru.forEach((item) => {
-        const amount = parseFloat(item.amount) || 0;
-        if (item.mutation_type === "masuk") saldo_akhir += amount;
-        else if (item.mutation_type === "keluar") saldo_akhir -= amount;
-      });
-
-      saldoPerAccount[accountId] = {
-        account_id: accountId,
-        account_name: account.name || "Tidak diketahui",
-        saldo_awal: parseFloat(account.saldo) || 0,
-        saldo_akhir,
-        last_updated: transaksiBaru.length > 0 ? now : account.last_updated,
-      };
-    });
-
-    // Update saldo jika berubah
-    for (const accId in saldoPerAccount) {
-      const { saldo_awal, saldo_akhir, last_updated } = saldoPerAccount[accId];
-      if (saldo_awal !== saldo_akhir) {
+    // 5. Update saldo ke database jika berubah
+    for (const [accId, acc] of accountMap) {
+      if (acc.has_update && acc.saldo_awal !== acc.saldo_akhir) {
         const { error: updateError } = await supabase
           .from("accounts")
           .update({
-            saldo: saldo_akhir,
-            last_updated,
+            saldo: acc.saldo_akhir,
+            last_updated: now,
           })
           .eq("id", accId);
 
         if (updateError) {
           console.error(`Gagal update saldo akun ${accId}:`, updateError);
+        } else {
+          acc.last_updated = now;
         }
       }
     }
 
-    // Response ke frontend
-    const responseData = Object.values(saldoPerAccount).map((account) => ({
-      account_id: account.account_id,
-      account_name: account.account_name,
-      saldo: account.saldo_akhir,
+    // 6. Format response
+    const responseData = Array.from(accountMap.values()).map((acc) => ({
+      account_id: acc.account_id,
+      account_name: acc.account_name,
+      saldo: acc.saldo_akhir,
     }));
 
     res.status(200).json({
@@ -93,7 +96,6 @@ const getAccountsWithSaldoHandler = async (req, res) => {
       message: "Data rekening berhasil diambil",
       data: responseData,
     });
-
   } catch (err) {
     console.error("Error:", err);
     res.status(500).json({ message: "Terjadi kesalahan server" });
