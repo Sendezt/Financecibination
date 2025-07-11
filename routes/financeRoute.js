@@ -12,6 +12,7 @@ const autototalPemasukanBulananHandler = require("../models/autototalPemasukanBu
 const autototalPengeluaranBulananHandler = require("../models/autototalPengeluaranBulanan");
 const autototalPemasukanHarianHandler = require("../models/autototalPemasukanHarian");
 const autototalPengeluaranHarianHandler = require("../models/autototalPengeluaranHarian");
+const totalTransaksiHandler = require("../models/jumlahMutasi");
 
 router.post("/pemasukan", pemasukanHandler);
 router.post("/pengeluaran", pengeluaranHandler);
@@ -31,5 +32,7 @@ router.get(
 );
 router.get("/autototal-pemasukan-harian", autototalPemasukanHarianHandler);
 router.get("/autototal-pengeluaran-harian", autototalPengeluaranHarianHandler);
+
+router.get("/total-transaksi", totalTransaksiHandler);
 
 module.exports = router;
