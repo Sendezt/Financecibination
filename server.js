@@ -10,6 +10,7 @@ const cleanUpHandler = require("./routes/cleanUpRoute");
 const mutasiAccountHandler = require("./routes/mutasiRoute");
 const getSaldo = require("./routes/getSaldoRoute");
 const getAccount = require("./routes/accountRoute");
+const transfer = require("./routes/transferRoute");
 const app = express();
 const PORT = process.env.PORT;
 
@@ -36,6 +37,7 @@ app.get("/", (req, res) => {
       "/api/mutasi",
       "/api/getSaldo",
       "/api/getAccount",
+      "/api/transfer",
     ],
     serverTime: new Date(Date.now()).toLocaleString("id-ID", {
       timeZone: "Asia/Jakarta",
@@ -50,6 +52,7 @@ app.use("/api/cleanUp", cleanUpHandler);
 app.use("/api/mutasi", verifyToken, mutasiAccountHandler);
 app.use("/api/getSaldo", verifyToken, getSaldo);
 app.use("/api/getAccount", verifyToken, getAccount);
+app.use("/api/transfer", verifyToken, transfer);
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
