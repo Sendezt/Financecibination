@@ -2,7 +2,7 @@ const supabase = require("../middleware/supabaseClient");
 
 const transferHandler = async (req, res) => {
   const user_id = req.user?.id; // Ambil user_id dari token yang sudah diverifikasi
-  const { from_account_id, to_account_id, amount } = req.body;
+  const { from_account_id, to_account_id, amount, deskripsi } = req.body;
 
   if (!from_account_id || !to_account_id || !amount || !user_id) {
     return res.status(400).json({
@@ -22,6 +22,7 @@ const transferHandler = async (req, res) => {
     p_from_account: from_account_id,
     p_to_account: to_account_id,
     p_amount: amount,
+    p_deskripsi: deskripsi || null,
   });
 
   if (error) {
