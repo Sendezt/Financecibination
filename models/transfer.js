@@ -1,9 +1,14 @@
+// Import Supabase client dari middleware
 const supabase = require("../middleware/supabaseClient");
 
 const transferHandler = async (req, res) => {
-  const user_id = req.user?.id; // Ambil user_id dari token yang sudah diverifikasi
+  // Ambil user_id dari token yang sudah diverifikasi
+  const user_id = req.user?.id;
+
+  // Ambil data yang dikirim dari body request
   const { from_account_id, to_account_id, amount, deskripsi } = req.body;
 
+  // Validasi Input, Semua field harus diisi kecuali deskripsi
   if (!from_account_id || !to_account_id || !amount || !user_id) {
     return res.status(400).json({
       message:
