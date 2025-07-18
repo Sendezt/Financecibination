@@ -5,7 +5,9 @@ const riwayatTransferHandler = async (req, res) => {
 
   // Ambil data riwayat 4 minggu(28 hari) terakhir
   const now = new Date();
-  const fourWeeksAgo = new Date(now.setDate(now.getDate() - 28));
+  const fourWeeksAgoDate = new Date(now);
+  fourWeeksAgoDate.setDate(now.getDate() - 28);
+  const fourWeeksAgo = fourWeeksAgoDate.toISOString();
 
   const { data, error } = await supabase
     .from("transfers")
