@@ -12,11 +12,45 @@ const getSaldo = require("./routes/getSaldoRoute");
 const getAccount = require("./routes/accountRoute");
 const transfer = require("./routes/transferRoute");
 const app = express();
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3000;
+
+const swaggerUi = require("swagger-ui-express");
+const swaggerJsdoc = require("swagger-jsdoc");
 
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Swagger configuration
+const swaggerOptions = {
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "Sendezt API Documentation",
+      version: "1.0.0",
+      description: "API Documentation for Sendezt BE-Financecibination",
+    },
+    servers: [
+      {
+        url: `http://localhost:${PORT}`,
+        description: "Local Server",
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+        },
+      },
+    },
+  },
+  apis: ["./routes/*.js"],
+};
+
+const swaggerDocs = swaggerJsdoc(swaggerOptions);
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -30,6 +64,7 @@ app.get("/", (req, res) => {
     status: true,
     message: "Welcome to Sendezt API",
     endpoints: [
+      "/api-docs",
       "/api/auth",
       "api/tambahRekening",
       "/api/finance",
