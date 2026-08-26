@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const sequelize = require("./config/database");
 const rateLimit = require("express-rate-limit");
 const authHandler = require("./routes/authRoute");
 const verifyToken = require("./middleware/verifyToken");
@@ -89,6 +90,20 @@ app.use("/api/getSaldo", verifyToken, getSaldo);
 app.use("/api/getAccount", verifyToken, getAccount);
 app.use("/api/transfer", verifyToken, transfer);
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+async function startServer() {
+  try {
+    await sequelize.authenticate();
+
+    console.log("Database PostgreSQL berhasil terhubung.");
+
+    app.listen(PORT, () => {
+      console.log(`Server berjalan di http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error("Gagal terhubung ke database:", error);
+
+    process.exit(1);
+  }
+}
+
+startServer();
