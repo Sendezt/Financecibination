@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const getAccountsHandler = require("../models/getAccountsWithSaldoHandler");
+const getAccountsHandler = require("../controllers/getAccountsWithSaldoHandler");
 
 /**
  * @swagger

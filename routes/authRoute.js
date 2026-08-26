@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const loginHandler = require("../models/loginHandler");
-const registerHandler = require("../models/registerHandler");
+const loginHandler = require("../controllers/loginHandler");
+const registerHandler = require("../controllers/registerHandler");
 
 /**
  * @swagger

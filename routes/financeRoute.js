@@ -1,18 +1,18 @@
 const express = require("express");
 const router = express.Router();
-const pemasukanHandler = require("../models/tambahPemasukan");
-const pengeluaranHandler = require("../models/tambahPengeluaran");
-const totalPengeluaranBulananHandler = require("../models/totalPengeluaranBulanan");
-const totalPemasukanBulananHandler = require("../models/totalPemasukanBulanan");
-const TotalPemasukanMingguanHandler = require("../models/totalPemasukanMingguan");
-const TotalPengeluaranMingguanHandler = require("../models/totalPengeluaranMingguan");
-const autototalPemasukanMingguanHandler = require("../models/autototalPemasukanMingguan");
-const autototalPengeluaranMingguanHandler = require("../models/autototalPengeluaranMingguan");
-const autototalPemasukanBulananHandler = require("../models/autototalPemasukanBulanan");
-const autototalPengeluaranBulananHandler = require("../models/autototalPengeluaranBulanan");
-const autototalPemasukanHarianHandler = require("../models/autototalPemasukanHarian");
-const autototalPengeluaranHarianHandler = require("../models/autototalPengeluaranHarian");
-const totalTransaksiHandler = require("../models/jumlahMutasi");
+const pemasukanHandler = require("../controllers/tambahPemasukan");
+const pengeluaranHandler = require("../controllers/tambahPengeluaran");
+const totalPengeluaranBulananHandler = require("../controllers/totalPengeluaranBulanan");
+const totalPemasukanBulananHandler = require("../controllers/totalPemasukanBulanan");
+const TotalPemasukanMingguanHandler = require("../controllers/totalPemasukanMingguan");
+const TotalPengeluaranMingguanHandler = require("../controllers/totalPengeluaranMingguan");
+const autototalPemasukanMingguanHandler = require("../controllers/autototalPemasukanMingguan");
+const autototalPengeluaranMingguanHandler = require("../controllers/autototalPengeluaranMingguan");
+const autototalPemasukanBulananHandler = require("../controllers/autototalPemasukanBulanan");
+const autototalPengeluaranBulananHandler = require("../controllers/autototalPengeluaranBulanan");
+const autototalPemasukanHarianHandler = require("../controllers/autototalPemasukanHarian");
+const autototalPengeluaranHarianHandler = require("../controllers/autototalPengeluaranHarian");
+const totalTransaksiHandler = require("../controllers/jumlahMutasi");
 
 /**
  * @swagger

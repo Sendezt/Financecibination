@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const tambahRekening = require("../models/tambahRekening");
+const tambahRekening = require("../controllers/tambahRekening");
 
 /**
  * @swagger

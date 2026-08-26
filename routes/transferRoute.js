@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const transfer = require("../models/transfer");
-const riwayatTransfer = require("../models/riwayatTransfer");
+const transfer = require("../controllers/transfer");
+const riwayatTransfer = require("../controllers/riwayatTransfer");
 
 /**
  * @swagger
