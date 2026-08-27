@@ -1,4 +1,4 @@
-const supabase = require("../middleware/supabaseClient");
+const supabase = require("../../middleware/supabaseClient");
 
 const hapusFinanceLamaHandler = async (req, res) => {
   try {

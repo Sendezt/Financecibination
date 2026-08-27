@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const cleanUpHandler = require("../controllers/cleanUpHandler");
+const cleanUpHandler = require("../controllers/maintenanceContoller/cleanUpHandler");
 
 /**
  * @swagger
