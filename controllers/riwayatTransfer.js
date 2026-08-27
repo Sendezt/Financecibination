@@ -1,32 +1,78 @@
-const supabase = require("../middleware/supabaseClient");
+const { Op } = require("sequelize");
+const { Transfer, Account } = require("../models");
 
 const riwayatTransferHandler = async (req, res) => {
-  const user_id = req.user?.id; // Ambil user_id dari token yang sudah diverifikasi
+  const user_id = req.user?.id;
 
-  // Ambil data riwayat 4 minggu(28 hari) terakhir
-  const now = new Date();
-  const fourWeeksAgoDate = new Date(now);
-  fourWeeksAgoDate.setDate(now.getDate() - 28);
-  const fourWeeksAgo = fourWeeksAgoDate.toISOString();
+  // =========================
+  // VALIDASI USER
+  // =========================
 
-  const { data, error } = await supabase
-    .from("transfers")
-    .select(
-      "*, from_account:from_account_id(name), to_account:to_account_id(name)"
-    )
-    .eq("user_id", user_id)
-    .gte("created_at", fourWeeksAgo)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error("Error fetching transfer history:", error);
-    return res.status(500).json({
-      message: "Gagal mengambil riwayat transfer",
-      error,
+  if (!user_id) {
+    return res.status(401).json({
+      status: false,
+      message: "User tidak terautentikasi.",
     });
   }
 
-  return res.status(200).json({ status: true, data });
+  // =========================
+  // BATAS 28 HARI TERAKHIR
+  // =========================
+
+  const now = new Date();
+
+  const fourWeeksAgo = new Date(now);
+  fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+
+  try {
+    // =========================
+    // AMBIL RIWAYAT TRANSFER
+    // =========================
+
+    const data = await Transfer.findAll({
+      where: {
+        user_id,
+        created_at: {
+          [Op.gte]: fourWeeksAgo,
+        },
+      },
+
+      attributes: [
+        "id",
+        "amount",
+        "deskripsi",
+        "created_at",
+      ],
+
+      include: [
+        {
+          model: Account,
+          as: "fromAccount",
+          attributes: ["id", "name"],
+        },
+        {
+          model: Account,
+          as: "toAccount",
+          attributes: ["id", "name"],
+        },
+      ],
+
+      order: [["created_at", "DESC"]],
+    });
+
+    return res.status(200).json({
+      status: true,
+      message: "Riwayat transfer berhasil diambil",
+      data,
+    });
+  } catch (error) {
+    console.error("Error fetching transfer history:", error);
+
+    return res.status(500).json({
+      status: false,
+      message: "Gagal mengambil riwayat transfer",
+    });
+  }
 };
 
 module.exports = riwayatTransferHandler;

@@ -10,7 +10,6 @@ const financeHandler = require("./routes/financeRoute");
 const maintenanceHandler = require("./routes/maintenanceRoute");
 const mutasiAccountHandler = require("./routes/mutasiRoute");
 const getSaldo = require("./routes/getSaldoRoute");
-const getAccount = require("./routes/accountRoute");
 const transfer = require("./routes/transferRoute");
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -87,7 +86,6 @@ app.use("/api/finance", verifyToken, financeHandler);
 app.use("/api/maintenance", maintenanceHandler);
 app.use("/api/mutasi", verifyToken, mutasiAccountHandler);
 app.use("/api/getSaldo", verifyToken, getSaldo);
-app.use("/api/getAccount", verifyToken, getAccount);
 app.use("/api/transfer", verifyToken, transfer);
 
 async function startServer() {
