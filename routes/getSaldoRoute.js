@@ -7,7 +7,7 @@ const getSaldo = require("../controllers/getSaldoHandler");
  * /api/getSaldo:
  *   get:
  *     summary: Get balance by user
- *     description: Retrieve total incoming, total outgoing, and current balances for all accounts owned by the user.
+ *     description: Retrieve current balances for all accounts owned by the authenticated user.
  *     tags: [Account]
  *     security:
  *       - bearerAuth: []
@@ -32,19 +32,21 @@ const getSaldo = require("../controllers/getSaldoHandler");
  *                     properties:
  *                       account_id:
  *                         type: string
+ *                         description: Account ID
  *                         example: "account-uuid"
  *                       account_name:
  *                         type: string
+ *                         description: Account name
  *                         example: "BCA"
- *                       total_masuk:
- *                         type: number
- *                         example: 500000
- *                       total_keluar:
- *                         type: number
- *                         example: 200000
  *                       saldo:
  *                         type: number
- *                         example: 300000
+ *                         description: Current account balance
+ *                         example: 1500000
+ *                       last_updated:
+ *                         type: string
+ *                         format: date-time
+ *                         description: Last time the account was updated
+ *                         example: "2026-08-27T10:00:00.000Z"
  *       401:
  *         description: Unauthorized
  *       404:
