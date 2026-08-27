@@ -7,7 +7,7 @@ const authHandler = require("./routes/authRoute");
 const verifyToken = require("./middleware/verifyToken");
 const addAccountHandler = require("./routes/rekeningRoute");
 const financeHandler = require("./routes/financeRoute");
-const cleanUpHandler = require("./routes/cleanUpRoute");
+const maintenanceHandler = require("./routes/maintenanceRoute");
 const mutasiAccountHandler = require("./routes/mutasiRoute");
 const getSaldo = require("./routes/getSaldoRoute");
 const getAccount = require("./routes/accountRoute");
@@ -84,7 +84,7 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authHandler);
 app.use("/api/tambahRekening", verifyToken, addAccountHandler);
 app.use("/api/finance", verifyToken, financeHandler);
-app.use("/api/cleanUp", cleanUpHandler);
+app.use("/api/maintenance", maintenanceHandler);
 app.use("/api/mutasi", verifyToken, mutasiAccountHandler);
 app.use("/api/getSaldo", verifyToken, getSaldo);
 app.use("/api/getAccount", verifyToken, getAccount);
