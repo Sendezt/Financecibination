@@ -67,15 +67,35 @@ const totalTransaksiHandler = require("../controllers/jumlahMutasi");
  *                 data:
  *                   type: object
  *                   properties:
+ *                     id:
+ *                       type: string
+ *                       description: Finance record ID
+ *                       example: "finance-uuid"
+ *                     account_id:
+ *                       type: string
+ *                       description: Associated account ID
+ *                       example: "account-uuid"
  *                     amount:
  *                       type: number
+ *                       description: Income amount
  *                       example: 1000000
+ *                     mutation_type:
+ *                       type: string
+ *                       description: Direction of money flow
+ *                       example: "masuk"
+ *                     transaction_type:
+ *                       type: string
+ *                       description: Type of transaction
+ *                       example: "income"
  *                     note:
  *                       type: string
+ *                       nullable: true
+ *                       description: Optional note for the transaction
  *                       example: "Gaji Freelance"
  *                     created_at:
  *                       type: string
  *                       format: date-time
+ *                       description: Transaction date
  *                       example: "2026-08-24T10:00:00.000Z"
  *       400:
  *         description: Bad request (missing fields)

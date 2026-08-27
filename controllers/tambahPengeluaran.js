@@ -1,64 +1,133 @@
-const supabase = require("../middleware/supabaseClient");
+const { Account, Finance, sequelize } = require("../models");
 
 const tambahPengeluaranHandler = async (req, res) => {
   const { name, amount, note, created_at } = req.body;
-  const user_id = req.user?.id; // Ambil user_id dari token yang sudah diverifikasi
+  const user_id = req.user?.id;
+
+  const transaction = await sequelize.transaction();
 
   try {
-    // Validasi input
+    /**
+     * VALIDASI
+     */
+
     if (!name || !amount || !user_id) {
+      await transaction.rollback();
+
       return res.status(400).json({
-        message: "Nama rekening, jumlah, dan User ID wajib diisi.",
+        status: false,
+        message: "Nama rekening, jumlah, dan user wajib diisi.",
       });
     }
 
-    // Cek apakah rekening dengan nama tersebut dimiliki oleh user ini
-    const { data: account, error: accountError } = await supabase
-      .from("accounts")
-      .select("id, user_id")
-      .eq("name", name)
-      .eq("user_id", user_id)
-      .single(); // Mengambil satu akun berdasarkan nama dan user_id
+    const nominal = Number(amount);
 
-    if (accountError || !account) {
+    if (!Number.isFinite(nominal) || nominal <= 0) {
+      await transaction.rollback();
+
+      return res.status(400).json({
+        status: false,
+        message: "Jumlah pengeluaran harus lebih dari 0.",
+      });
+    }
+
+    /**
+     * CARI ACCOUNT
+     */
+
+    const account = await Account.findOne({
+      where: {
+        name,
+        user_id,
+      },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+
+    if (!account) {
+      await transaction.rollback();
+
       return res.status(404).json({
+        status: false,
         message:
-          "Rekening dengan nama tersebut tidak ditemukan atau tidak dimiliki oleh user.",
+          "Rekening tidak ditemukan atau bukan milik user.",
       });
     }
 
-    // Insert pengeluaran ke tabel finance
-    const { data, error } = await supabase
-      .from("finance")
-      .insert([
-        {
-          account_id: account.id,
-          amount: Number(amount),
-          mutation_type: "keluar", // pengeluaran
-          note,
-          created_at: created_at || new Date().toISOString(),
-        },
-      ])
-      .select()
-      .single();
+    /**
+     * CEK SALDO
+     */
 
-    if (error) {
-      return res
-        .status(500)
-        .json({ message: "Gagal menambahkan pengeluaran", error });
+    const currentSaldo = Number(account.saldo);
+
+    if (currentSaldo < nominal) {
+      await transaction.rollback();
+
+      return res.status(400).json({
+        status: false,
+        message: "Saldo tidak mencukupi.",
+      });
     }
 
-    res.status(201).json({
+    /**
+     * TAMBAHKAN DATA FINANCE
+     */
+
+    const finance = await Finance.create(
+      {
+        account_id: account.id,
+        amount: nominal,
+        mutation_type: "keluar",
+        transaction_type: "expense",
+        note,
+        created_at: created_at || new Date(),
+      },
+      {
+        transaction,
+      },
+    );
+
+    /**
+     * KURANGI SALDO
+     */
+
+    await account.decrement(
+      "saldo",
+      {
+        by: nominal,
+        transaction,
+      },
+    );
+
+    /**
+     * COMMIT
+     */
+
+    await transaction.commit();
+
+    return res.status(201).json({
       status: true,
       message: "Pengeluaran berhasil ditambahkan",
       data: {
-        amount: data.amount,
-        note: data.note,
+        id: finance.id,
+        amount: finance.amount,
+        note: finance.note,
+        created_at: finance.created_at,
       },
     });
-  } catch (err) {
-    console.error("Error:", err);
-    res.status(500).json({ message: "Internal server error" });
+  } catch (error) {
+    await transaction.rollback();
+
+    console.error(
+      "Tambah Pengeluaran Error:",
+      error,
+    );
+
+    return res.status(500).json({
+      status: false,
+      message: "Gagal menambahkan pengeluaran",
+      error: error.message,
+    });
   }
 };
 

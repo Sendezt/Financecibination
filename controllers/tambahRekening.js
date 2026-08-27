@@ -1,51 +1,82 @@
-const supabase = require("../middleware/supabaseClient");
+const { Account } = require("../models");
 
 const addAccountHandler = async (req, res) => {
-  const { name } = req.body; // Tidak perlu user_id dari body, karena diambil dari token
-  const user_id = req.user?.id; // Ambil user_id dari token yang terautentikasi
+  const { name } = req.body;
+
+  // Ambil user_id dari token JWT
+  const user_id = req.user?.id;
 
   try {
-    // Pastikan user_id dan name tidak kosong
-    if (!user_id || !name) {
-      return res
-        .status(400)
-        .json({ message: "User ID dan Nama rekening wajib diisi." });
+    /**
+     * =========================
+     * VALIDASI USER
+     * =========================
+     */
+
+    if (!user_id) {
+      return res.status(401).json({
+        status: false,
+        message: "User tidak terautentikasi",
+      });
     }
 
-    // Insert data rekening ke tabel accounts dan select untuk mendapatkan datanya kembali
-    const { data, error } = await supabase
-      .from("accounts")
-      .insert([{ user_id, name }])
-      .select(); // Penting: gunakan select() untuk mendapatkan data yang baru dibuat
+    /**
+     * =========================
+     * VALIDASI NAMA REKENING
+     * =========================
+     */
 
-    if (error) {
-      return res
-        .status(500)
-        .json({ message: "Gagal menambahkan rekening", error });
+    if (!name || typeof name !== "string") {
+      return res.status(400).json({
+        status: false,
+        message: "Nama rekening wajib diisi",
+      });
     }
 
-    // Pastikan data ada dan tidak kosong
-    if (!data || data.length === 0) {
-      return res
-        .status(500)
-        .json({ message: "Data rekening tidak berhasil disimpan" });
+    const accountName = name.trim();
+
+    if (!accountName) {
+      return res.status(400).json({
+        status: false,
+        message: "Nama rekening tidak boleh kosong",
+      });
     }
 
-    // Ambil record pertama dari array hasil insert
-    const insertedAccount = data[0];
+    /**
+     * =========================
+     * BUAT REKENING
+     * =========================
+     */
 
-    const responseData = {
-      account_name: insertedAccount.name,
-    };
+    const account = await Account.create({
+      user_id,
+      name: accountName,
+    });
 
-    res.status(201).json({
+    /**
+     * =========================
+     * RESPONSE
+     * =========================
+     */
+
+    return res.status(201).json({
       status: true,
       message: "Rekening berhasil ditambahkan",
-      data: responseData,
+      data: {
+        id: account.id,
+        account_name: account.name,
+        saldo: account.saldo,
+        created_at: account.created_at,
+      },
     });
   } catch (error) {
-    console.error("Error:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("Add Account Error:", error);
+
+    return res.status(500).json({
+      status: false,
+      message: "Gagal menambahkan rekening",
+      error: error.message,
+    });
   }
 };
 

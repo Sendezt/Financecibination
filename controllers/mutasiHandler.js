@@ -1,67 +1,156 @@
-const supabase = require("../middleware/supabaseClient");
+const { Account, Finance } = require("../models");
 const { DateTime } = require("luxon");
+const { Op } = require("sequelize");
 
 const mutasiMingguanHandler = async (req, res) => {
-  const user_id = req.user?.id; // Ambil user_id dari token yang sudah diverifikasi
+  const user_id = req.user?.id;
 
   try {
-    // Pastikan user_id ada (jika token tidak valid atau tidak ada)
+    /**
+     * =========================
+     * VALIDASI USER
+     * =========================
+     */
+
     if (!user_id) {
-      return res.status(401).json({ message: "User tidak terautentikasi." });
+      return res.status(401).json({
+        status: false,
+        message: "User tidak terautentikasi",
+      });
     }
 
-    // Ambil semua account milik user
-    const { data: accounts, error: accError } = await supabase
-      .from("accounts")
-      .select("id, name")
-      .eq("user_id", user_id);
+    /**
+     * =========================
+     * AMBIL ACCOUNT MILIK USER
+     * =========================
+     */
 
-    if (accError || !accounts || accounts.length === 0) {
-      return res.status(404).json({ message: "Tidak ada account ditemukan." });
-    }
-
-    const accountIdToName = {};
-    const accountIds = accounts.map((a) => {
-      accountIdToName[a.id] = a.name;
-      return a.id;
+    const accounts = await Account.findAll({
+      where: {
+        user_id,
+      },
+      attributes: ["id", "name"],
+      raw: true,
     });
 
-    // Ambil tanggal 7 hari terakhir
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const fromDate = sevenDaysAgo.toISOString().split("T")[0];
-
-    // Ambil mutasi
-    const { data: finance, error: finError } = await supabase
-      .from("finance")
-      .select("*")
-      .in("account_id", accountIds)
-      .gte("created_at", fromDate)
-      .order("created_at", { ascending: false });
-
-    if (finError) {
-      return res
-        .status(500)
-        .json({ message: "Gagal mengambil data mutasi", error: finError });
+    if (!accounts || accounts.length === 0) {
+      return res.status(404).json({
+        status: false,
+        message: "Tidak ada rekening ditemukan",
+      });
     }
 
-    // Tambahkan nama account ke setiap transaksi
-    const dataWithAccountNames = finance.map((item) => ({
-      ...item,
-      account_name: accountIdToName[item.account_id] || "Tidak diketahui",
-      date_indonesia: DateTime.fromISO(item.created_at, { zone: "utc" })
-        .setZone("Asia/Jakarta")
-        .toFormat("yyyy-MM-dd HH:mm:ss"),
-    }));
+    /**
+     * =========================
+     * AMBIL ID ACCOUNT
+     * =========================
+     */
 
-    res.status(200).json({
+    const accountIds = accounts.map(
+      (account) => account.id,
+    );
+
+    /**
+     * =========================
+     * TENTUKAN 7 HARI TERAKHIR
+     * =========================
+     */
+
+    const sevenDaysAgo = new Date();
+
+    sevenDaysAgo.setDate(
+      sevenDaysAgo.getDate() - 7,
+    );
+
+    /**
+     * =========================
+     * AMBIL DATA MUTASI
+     * =========================
+     */
+
+    const finance = await Finance.findAll({
+      where: {
+        account_id: {
+          [Op.in]: accountIds,
+        },
+
+        created_at: {
+          [Op.gte]: sevenDaysAgo,
+        },
+      },
+
+      include: [
+        {
+          model: Account,
+          as: "account",
+          attributes: ["name"],
+        },
+      ],
+
+      order: [
+        ["created_at", "DESC"],
+      ],
+    });
+
+    /**
+     * =========================
+     * FORMAT RESPONSE
+     * =========================
+     */
+
+    const dataWithAccountNames = finance.map(
+      (item) => ({
+        id: item.id,
+
+        account_id: item.account_id,
+
+        account_name:
+          item.account?.name || "Tidak diketahui",
+
+        amount: item.amount,
+
+        mutation_type: item.mutation_type,
+
+        transaction_type:
+          item.transaction_type,
+
+        transfer_id: item.transfer_id,
+
+        note: item.note,
+
+        created_at: item.created_at,
+
+        date_indonesia: DateTime
+          .fromJSDate(item.created_at, {
+            zone: "utc",
+          })
+          .setZone("Asia/Jakarta")
+          .toFormat("yyyy-MM-dd HH:mm:ss"),
+      }),
+    );
+
+    /**
+     * =========================
+     * RESPONSE
+     * =========================
+     */
+
+    return res.status(200).json({
       status: true,
-      message: "Data mutasi 1 minggu terakhir",
+      message: "Data mutasi 7 hari terakhir",
       data: dataWithAccountNames,
     });
-  } catch (err) {
-    console.error("Error:", err);
-    res.status(500).json({ message: "Internal server error" });
+  } catch (error) {
+    console.error(
+      "Get Mutasi Mingguan Error:",
+      error,
+    );
+
+    return res.status(500).json({
+      status: false,
+      message: "Gagal mengambil data mutasi",
+      error: error.message,
+    });
   }
 };
 
