@@ -1,4 +1,5 @@
 const { Op, fn, col, literal } = require("sequelize");
+const { DateTime } = require("luxon");
 
 const {
   sequelize,
@@ -17,18 +18,14 @@ const generateDailySummaryHandler = async (req, res) => {
      * ==========================================
      */
 
-    const now = new Date();
+    const nowJakarta = DateTime.now().setZone("Asia/Jakarta");
+    const yesterdayJakarta = nowJakarta.minus({ days: 1 });
 
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
+    // Awal hari kemarin (00:00:00 Asia/Jakarta)
+    const startDate = yesterdayJakarta.startOf("day").toJSDate();
 
-    // Awal hari
-    const startDate = new Date(yesterday);
-    startDate.setHours(0, 0, 0, 0);
-
-    // Awal hari berikutnya
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 1);
+    // Awal hari berikutnya (00:00:00 Asia/Jakarta)
+    const endDate = yesterdayJakarta.startOf("day").plus({ days: 1 }).toJSDate();
 
     /**
      * ==========================================
@@ -126,7 +123,7 @@ const generateDailySummaryHandler = async (req, res) => {
      * ==========================================
      */
 
-    const date = startDate.toISOString().split("T")[0];
+    const date = yesterdayJakarta.toFormat("yyyy-MM-dd");
 
     /**
      * ==========================================
@@ -156,6 +153,7 @@ const generateDailySummaryHandler = async (req, res) => {
             total_transaction: summary.total_transaction,
           },
           {
+            conflictFields: ["user_id", "date"],
             transaction,
           },
         );

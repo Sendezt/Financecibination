@@ -46,6 +46,14 @@ const DailyFinanceSummary = sequelize.define(
 
         createdAt: "created_at",
         updatedAt: "updated_at",
+
+        indexes: [
+            {
+                name: "unique_daily_finance_summary_user_date",
+                unique: true,
+                fields: ["user_id", "date"],
+            },
+        ],
     },
 );
 
