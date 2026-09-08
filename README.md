@@ -157,6 +157,9 @@ Semua endpoint di bawah ini mewajibkan header: `Authorization: Bearer <token_jwt
     *   **Deskripsi:** Otomatis menghitung total pengeluaran bulan ini.
 *   **`GET /api/finance/total-transaksi`**
     *   **Deskripsi:** Mengambil ringkasan total pemasukan dan pengeluaran harian selama 7 hari terakhir (periode bergulir) untuk disajikan dalam bentuk grafik/tren di frontend.
+*   **`GET /api/finance/net-cashflow-bulanan`**
+    *   **Query Params (Opsional):** `?month=XX&year=XXXX` (default ke bulan & tahun saat ini)
+    *   **Deskripsi:** Mengambil ringkasan net cashflow (total pemasukan - total pengeluaran), total saldo berjalan seluruh rekening, rincian per rekening, serta perbandingan dengan net cashflow bulan sebelumnya.
 
 #### 4. Mutasi Transaksi (`/api/mutasi`)
 *   **`GET /api/mutasi`**

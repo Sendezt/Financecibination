@@ -13,6 +13,7 @@ const autototalPengeluaranBulananHandler = require("../controllers/autototalPeng
 const autototalPemasukanHarianHandler = require("../controllers/autototalPemasukanHarian");
 const autototalPengeluaranHarianHandler = require("../controllers/autototalPengeluaranHarian");
 const totalTransaksiHandler = require("../controllers/jumlahMutasi");
+const netCashflowBulananHandler = require("../controllers/netCashflowBulanan");
 
 /**
  * @swagger
@@ -607,5 +608,126 @@ router.get("/autototal-pengeluaran-harian", autototalPengeluaranHarianHandler);
  *         description: Internal server error
  */
 router.get("/total-transaksi", totalTransaksiHandler);
+
+/**
+ * @swagger
+ * /api/finance/net-cashflow-bulanan:
+ *   get:
+ *     summary: Get monthly net cashflow and account balances
+ *     description: Retrieve total income, total expense, net cashflow (income - expense), account balances, and comparison with the previous month for a specific month or the current month.
+ *     tags: [Finance Reports]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: month
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Month (1-12, defaults to current month)
+ *         example: "08"
+ *       - in: query
+ *         name: year
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Year (>= 2000, defaults to current year)
+ *         example: "2026"
+ *     responses:
+ *       200:
+ *         description: Success retrieving net cashflow and balance data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Data net cashflow saldo bulanan berhasil diambil"
+ *                 user_id:
+ *                   type: string
+ *                   example: "user-uuid"
+ *                 bulan:
+ *                   type: integer
+ *                   example: 8
+ *                 tahun:
+ *                   type: integer
+ *                   example: 2026
+ *                 total_saldo:
+ *                   type: number
+ *                   example: 15000000
+ *                 total_pemasukan:
+ *                   type: number
+ *                   example: 5000000
+ *                 total_pengeluaran:
+ *                   type: number
+ *                   example: 3000000
+ *                 net_cashflow:
+ *                   type: number
+ *                   example: 2000000
+ *                 status_cashflow:
+ *                   type: string
+ *                   enum: [surplus, defisit, seimbang]
+ *                   example: "surplus"
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       account_id:
+ *                         type: string
+ *                         example: "account-uuid"
+ *                       nama_rekening:
+ *                         type: string
+ *                         example: "BCA"
+ *                       saldo:
+ *                         type: number
+ *                         example: 10000000
+ *                       total_pemasukan:
+ *                         type: number
+ *                         example: 3000000
+ *                       total_pengeluaran:
+ *                         type: number
+ *                         example: 1500000
+ *                       net_cashflow:
+ *                         type: number
+ *                         example: 1500000
+ *                       status_cashflow:
+ *                         type: string
+ *                         example: "surplus"
+ *                 perbandingan_bulan_lalu:
+ *                   type: object
+ *                   properties:
+ *                     total_pemasukan_bulan_lalu:
+ *                       type: number
+ *                       example: 4000000
+ *                     total_pengeluaran_bulan_lalu:
+ *                       type: number
+ *                       example: 2500000
+ *                     net_cashflow_bulan_lalu:
+ *                       type: number
+ *                       example: 1500000
+ *                     selisih_net_cashflow:
+ *                       type: number
+ *                       example: 500000
+ *                     persentase_perubahan:
+ *                       type: number
+ *                       nullable: true
+ *                       example: 33.33
+ *                     status:
+ *                       type: string
+ *                       enum: [naik, turun, tetap]
+ *                       example: "naik"
+ *       400:
+ *         description: Bad request (invalid parameter)
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+router.get("/net-cashflow-bulanan", netCashflowBulananHandler);
 
 module.exports = router;

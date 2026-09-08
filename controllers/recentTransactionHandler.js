@@ -1,8 +1,7 @@
 const { Account, Finance } = require("../models");
-const { DateTime } = require("luxon");
 const { Op } = require("sequelize");
 
-const mutasiMingguanHandler = async (req, res) => {
+const recentTransactionHandler = async (req, res) => {
   const user_id = req.user?.id;
 
   try {
@@ -18,9 +17,7 @@ const mutasiMingguanHandler = async (req, res) => {
 
     // AMBIL REKENING MILIK USER
     const accounts = await Account.findAll({
-      where: {
-        user_id,
-      },
+      where: { user_id },
       attributes: ["id"],
       raw: true,
     });
@@ -29,13 +26,9 @@ const mutasiMingguanHandler = async (req, res) => {
     if (accounts.length === 0) {
       return res.status(200).json({
         success: true,
-        message: "Data mutasi berhasil diambil",
+        message: "Data transaksi terbaru berhasil diambil",
         data: [],
         meta: {
-          period: {
-            from: null,
-            to: null,
-          },
           total: 0,
         },
       });
@@ -44,37 +37,11 @@ const mutasiMingguanHandler = async (req, res) => {
     // AMBIL ID SEMUA REKENING
     const accountIds = accounts.map((account) => account.id);
 
-    // TENTUKAN PERIODE 7 HARI KALENDER TERAKHIR
-    // Menggunakan timezone Asia/Jakarta
-    // Hari ini = 1 hari, mundur 6 hari = total 7 hari kalender
-    const now = DateTime.now().setZone("Asia/Jakarta");
-
-    const todayStart = now.startOf("day");
-    const todayEnd = now.endOf("day");
-    const sevenDaysAgo = todayStart.minus({ days: 6 });
-
-    // Konversi ke UTC untuk query database
-    const startDateUTC = sevenDaysAgo
-      .toUTC()
-      .toJSDate();
-
-    const endDateUTC = todayEnd
-      .toUTC()
-      .toJSDate();
-
-
-    // AMBIL DATA MUTASI
+    // AMBIL 5 TRANSAKSI TERBARU
     const finance = await Finance.findAll({
       where: {
         account_id: {
           [Op.in]: accountIds,
-        },
-
-        created_at: {
-          [Op.between]: [
-            startDateUTC,
-            endDateUTC,
-          ],
         },
       },
 
@@ -86,9 +53,9 @@ const mutasiMingguanHandler = async (req, res) => {
         },
       ],
 
-      order: [
-        ["created_at", "DESC"],
-      ],
+      order: [["created_at", "DESC"]],
+
+      limit: 5,
     });
 
     // FORMAT DATA RESPONSE
@@ -117,32 +84,24 @@ const mutasiMingguanHandler = async (req, res) => {
     return res.status(200).json({
       success: true,
 
-      message: "Data mutasi 7 hari terakhir berhasil diambil",
+      message: "Data 5 transaksi terbaru berhasil diambil",
 
       data,
 
       meta: {
-        period: {
-          from: sevenDaysAgo.toISO(),
-          to: todayEnd.toISO(),
-        },
-
         total: data.length,
       },
     });
   } catch (error) {
     // Log lengkap hanya di backend
-    console.error(
-      "Get Mutasi Mingguan Error:",
-      error,
-    );
+    console.error("Get Recent Transactions Error:", error);
 
     // Jangan kirim error.message ke production
     return res.status(500).json({
       success: false,
-      message: "Terjadi kesalahan saat mengambil data mutasi",
+      message: "Terjadi kesalahan saat mengambil data transaksi terbaru",
     });
   }
 };
 
-module.exports = mutasiMingguanHandler;
+module.exports = recentTransactionHandler;

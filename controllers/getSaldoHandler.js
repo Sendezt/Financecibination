@@ -75,6 +75,17 @@ const getSaldoByUserIdHandler = async (req, res) => {
 
     /**
      * =========================
+     * HITUNG TOTAL BALANCE
+     * =========================
+     */
+
+    const total_balance = data.reduce(
+      (sum, account) => sum + account.saldo,
+      0
+    );
+
+    /**
+     * =========================
      * RESPONSE
      * =========================
      */
@@ -82,6 +93,7 @@ const getSaldoByUserIdHandler = async (req, res) => {
     return res.status(200).json({
       status: true,
       message: "Data saldo berhasil diambil",
+      total_balance,
       data,
     });
   } catch (error) {

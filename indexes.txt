@@ -1,0 +1,65 @@
+accounts_pkey   :
+CREATE UNIQUE INDEX accounts_pkey ON public.accounts USING btree (id)
+
+daily_finance_summary_pkey  :
+CREATE UNIQUE INDEX daily_finance_summary_pkey ON public.daily_finance_summary USING btree (id)
+
+finance_archive_pkey    :
+CREATE UNIQUE INDEX finance_archive_pkey ON public.finance_archive USING btree (id)
+
+finance_pkey    :
+CREATE UNIQUE INDEX finance_pkey ON public.finance USING btree (id)
+
+idx_accounts_user_id    :
+CREATE INDEX idx_accounts_user_id ON public.accounts USING btree (user_id)
+
+idx_daily_finance_summary_user_date :
+CREATE INDEX idx_daily_finance_summary_user_date ON public.daily_finance_summary USING btree (user_id, date)
+
+idx_finance_account_created_at  :
+CREATE INDEX idx_finance_account_created_at ON public.finance USING btree (account_id, created_at)
+
+idx_finance_account_transaction_created :
+CREATE INDEX idx_finance_account_transaction_created ON public.finance USING btree (account_id, transaction_type, created_at)
+
+idx_finance_archive_account_created_at  :
+CREATE INDEX idx_finance_archive_account_created_at ON public.finance_archive USING btree (account_id, created_at)
+
+idx_finance_archive_transfer_id :
+CREATE INDEX idx_finance_archive_transfer_id ON public.finance_archive USING btree (transfer_id)
+
+idx_finance_transfer_id :
+CREATE INDEX idx_finance_transfer_id ON public.finance USING btree (transfer_id)
+
+idx_transfers_archive_user_created_at   :
+CREATE INDEX idx_transfers_archive_user_created_at ON public.transfers_archive USING btree (user_id, created_at)
+
+idx_transfers_from_account_id   :
+CREATE INDEX idx_transfers_from_account_id ON public.transfers USING btree (from_account_id)
+
+idx_transfers_to_account_id :
+CREATE INDEX idx_transfers_to_account_id ON public.transfers USING btree (to_account_id)
+
+idx_transfers_user_created_at   :
+CREATE INDEX idx_transfers_user_created_at ON public.transfers USING btree (user_id, created_at)
+
+pengguna_email_key  :
+CREATE UNIQUE INDEX pengguna_email_key ON public.pengguna USING btree (email)
+
+pengguna_pkey   :
+CREATE UNIQUE INDEX pengguna_pkey ON public.pengguna USING btree (id)
+
+pengguna_wa_number_key  :
+CREATE UNIQUE INDEX pengguna_wa_number_key ON public.pengguna USING btree (wa_number)
+
+SequelizeMeta_pkey  :
+CREATE UNIQUE INDEX "SequelizeMeta_pkey" ON public."SequelizeMeta" USING btree (name)
+
+transfer_pkey   :
+CREATE UNIQUE INDEX transfer_pkey ON public.transfers USING btree (id)
+
+transfers_archive_pkey  :
+CREATE UNIQUE INDEX transfers_archive_pkey ON public.transfers_archive USING btree (id)
+
+unique_daily_finance_summary_user_date:
+ CREATE UNIQUE INDEX unique_daily_finance_summary_user_date ON public.daily_finance_summary USING btree (user_id, date)
