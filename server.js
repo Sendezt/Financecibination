@@ -88,20 +88,16 @@ app.use("/api/mutasi", verifyToken, mutasiAccountHandler);
 app.use("/api/getSaldo", verifyToken, getSaldo);
 app.use("/api/transfer", verifyToken, transfer);
 
-async function startServer() {
-  try {
-    await sequelize.authenticate();
-
-    console.log("Database PostgreSQL berhasil terhubung.");
-
-    app.listen(PORT, () => {
-      console.log(`Server berjalan di http://localhost:${PORT}`);
+if (process.env.NODE_ENV !== "production") {
+  sequelize.authenticate()
+    .then(() => {
+      console.log("Database PostgreSQL berhasil terhubung.");
+      app.listen(PORT, () => {
+        console.log(`Server berjalan di http://localhost:${PORT}`);
+      });
+    })
+    .catch((error) => {
+      console.error("Gagal terhubung ke database:", error);
     });
-  } catch (error) {
-    console.error("Gagal terhubung ke database:", error);
-
-    process.exit(1);
-  }
 }
-
-startServer();
+module.exports = app;
