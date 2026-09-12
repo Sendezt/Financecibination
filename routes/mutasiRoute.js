@@ -3,6 +3,7 @@ const router = express.Router();
 const mutasiHandler = require("../controllers/mutasiHandler");
 const recentTransactionHandler = require("../controllers/recentTransactionHandler");
 const chartAktivitasKeuanganHandler = require("../controllers/chartController/chartAktivitasKeuanganHandler");
+const mutasiSummaryHandler = require("../controllers/mutasiSummaryHandler");
 
 /**
  * @swagger
@@ -143,6 +144,100 @@ const chartAktivitasKeuanganHandler = require("../controllers/chartController/ch
  *         description: Internal server error
  */
 router.get("/", mutasiHandler);
+
+/**
+ * @swagger
+ * /api/mutasi/summary:
+ *   get:
+ *     summary: Get mutation summary for dashboard cards
+ *     description: >
+ *       Returns aggregated totals for the three summary cards:
+ *       Total Pemasukan (income sum + count), Total Pengeluaran (expense sum + count),
+ *       and Net Mutasi Periode (net cashflow + surplus/defisit status).
+ *       Uses the same configurable date range as the main mutation endpoint.
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: range
+ *         schema:
+ *           type: string
+ *           enum: [7d, 1m, 3m]
+ *           default: 7d
+ *         description: "Date range filter: 7d = 7 days, 1m = 1 month, 3m = 3 months"
+ *     responses:
+ *       200:
+ *         description: Success retrieving mutation summary
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Ringkasan mutasi 7 hari terakhir berhasil diambil"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     total_pemasukan:
+ *                       type: object
+ *                       properties:
+ *                         amount:
+ *                           type: number
+ *                           description: Total income amount in the period
+ *                           example: 2400000
+ *                         count:
+ *                           type: integer
+ *                           description: Number of income mutations
+ *                           example: 4
+ *                     total_pengeluaran:
+ *                       type: object
+ *                       properties:
+ *                         amount:
+ *                           type: number
+ *                           description: Total expense amount in the period
+ *                           example: 1450000
+ *                         count:
+ *                           type: integer
+ *                           description: Number of expense mutations
+ *                           example: 2
+ *                     net_mutasi:
+ *                       type: object
+ *                       properties:
+ *                         amount:
+ *                           type: number
+ *                           description: Net cashflow (income - expense)
+ *                           example: 950000
+ *                         status:
+ *                           type: string
+ *                           enum: [surplus, defisit, netral]
+ *                           description: Net cashflow status
+ *                           example: surplus
+ *                 meta:
+ *                   type: object
+ *                   properties:
+ *                     period:
+ *                       type: object
+ *                       properties:
+ *                         range:
+ *                           type: string
+ *                           example: "7d"
+ *                         from:
+ *                           type: string
+ *                           format: date-time
+ *                         to:
+ *                           type: string
+ *                           format: date-time
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+router.get("/summary", mutasiSummaryHandler);
 
 /**
  * @swagger
