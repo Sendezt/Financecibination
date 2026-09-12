@@ -1,34 +1,70 @@
-const supabase = require("../../middleware/supabaseClient");
+const { sequelize, FinanceArchive, TransferArchive } = require("../../models");
+const { Op } = require("sequelize");
 
-const hapusFinanceLamaHandler = async (req, res) => {
+const cleanUpHandler = async (req, res) => {
+  const transaction = await sequelize.transaction();
+
   try {
-    // Hitung tanggal 1 tahun yang lalu dari hari ini
-    const today = new Date();
-    const oneYearAgo = new Date(today.setFullYear(today.getFullYear() - 1));
-    const oneYearAgoStr = oneYearAgo.toISOString().split("T")[0];
+    // Tentukan cutoff date (default 3 tahun yang lalu atau berdasarkan query params days)
+    const days = Number(req.query.days);
+    const cutoffDate = new Date();
 
-    // Hapus data yang lebih lama dari 1 tahun
-    const { data, error } = await supabase
-      .from("finance")
-      .delete()
-      .lt("created_at", oneYearAgoStr)
-      .select();
-
-    if (error) {
-      return res
-        .status(500)
-        .json({ message: "Gagal menghapus data lama", error });
+    if (Number.isInteger(days) && days > 0) {
+      cutoffDate.setDate(cutoffDate.getDate() - days);
+    } else {
+      cutoffDate.setFullYear(cutoffDate.getFullYear() - 3);
     }
 
-    res.status(200).json({
+    /**
+     * Hapus data arsip yang lebih lama dari cutoff date.
+     * Hapus FinanceArchive terlebih dahulu untuk menjaga integritas foreign key ke TransferArchive.
+     */
+    const deletedFinanceCount = await FinanceArchive.destroy({
+      where: {
+        created_at: {
+          [Op.lt]: cutoffDate,
+        },
+      },
+      transaction,
+    });
+
+    const deletedTransferCount = await TransferArchive.destroy({
+      where: {
+        created_at: {
+          [Op.lt]: cutoffDate,
+        },
+      },
+      transaction,
+    });
+
+    await transaction.commit();
+
+    const totalDeleted = deletedFinanceCount + deletedTransferCount;
+
+    return res.status(200).json({
       status: true,
-      message: "Data yang lebih dari 1 tahun berhasil dihapus",
-      deleted_rows: data.length,
+      message:
+        Number.isInteger(days) && days > 0
+          ? `Data arsip yang lebih dari ${days} hari berhasil dihapus`
+          : "Data arsip yang lebih dari 3 tahun berhasil dihapus",
+      cutoff_date: cutoffDate.toISOString(),
+      deleted_rows: totalDeleted,
+      details: {
+        finance_archive: deletedFinanceCount,
+        transfer_archive: deletedTransferCount,
+      },
     });
   } catch (err) {
-    console.error("Error:", err);
-    res.status(500).json({ message: "Internal server error" });
+    await transaction.rollback();
+
+    console.error("CleanUp Handler Error:", err);
+
+    return res.status(500).json({
+      status: false,
+      message: "Gagal menghapus data lama dari arsip",
+      error: err.message,
+    });
   }
 };
 
-module.exports = hapusFinanceLamaHandler;
+module.exports = cleanUpHandler;

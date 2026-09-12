@@ -8,12 +8,18 @@ const archiveOldDataHandler = require("../controllers/maintenanceContoller/archi
  * @swagger
  * /api/maintenance/cleanup:
  *   get:
- *     summary: Clean up old transaction records
- *     description: Automatically delete transaction records (finance mutations) older than 1 year.
+ *     summary: Clean up old archived records
+ *     description: Automatically delete old archived records from finance_archive and transfers_archive tables older than 3 years (or custom retention days).
  *     tags: [Maintenance]
+ *     parameters:
+ *       - in: query
+ *         name: days
+ *         schema:
+ *           type: integer
+ *         description: Optional retention days. Defaults to 3 years (1095 days) if not provided.
  *     responses:
  *       200:
- *         description: Success cleaning up old records
+ *         description: Success cleaning up old archived records
  *         content:
  *           application/json:
  *             schema:
@@ -24,10 +30,20 @@ const archiveOldDataHandler = require("../controllers/maintenanceContoller/archi
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: Data yang lebih dari 1 tahun berhasil dihapus
+ *                   example: Data arsip yang lebih dari 3 tahun berhasil dihapus
+ *                 cutoff_date:
+ *                   type: string
+ *                   format: date-time
  *                 deleted_rows:
  *                   type: integer
  *                   example: 5
+ *                 details:
+ *                   type: object
+ *                   properties:
+ *                     finance_archive:
+ *                       type: integer
+ *                     transfer_archive:
+ *                       type: integer
  *       500:
  *         description: Internal server error
  */
