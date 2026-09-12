@@ -31,6 +31,29 @@ const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 15;
 const MAX_LIMIT = 100;
 
+/**
+ * Format tanggal ke format ISO UTC (Z) sesuai dengan waktu database
+ * tanpa pergeseran offset zona waktu (-7 jam).
+ */
+const formatToIsoUtc = (date) => {
+  if (!date) return null;
+
+  if (typeof date === "string") {
+    const clean = date.replace(" ", "T").replace(/Z|[+-]\d{2}(:\d{2})?$/, "");
+    return clean.includes(".") ? `${clean}Z` : `${clean}.000Z`;
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+  const ms = String(date.getMilliseconds()).padStart(3, "0");
+
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${ms}Z`;
+};
+
 const mutasiHandler = async (req, res) => {
   const user_id = req.user?.id;
 
@@ -170,7 +193,7 @@ const mutasiHandler = async (req, res) => {
 
       note: item.note,
 
-      created_at: item.created_at,
+      created_at: formatToIsoUtc(item.created_at),
     }));
 
     const totalPages = Math.ceil(totalItems / limit);
@@ -186,8 +209,8 @@ const mutasiHandler = async (req, res) => {
       meta: {
         period: {
           range,
-          from: rangeStart.toISO(),
-          to: todayEnd.toISO(),
+          from: rangeStart.toUTC().toISO(),
+          to: todayEnd.toUTC().toISO(),
         },
 
         pagination: {
