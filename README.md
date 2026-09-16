@@ -163,7 +163,17 @@ Semua endpoint di bawah ini mewajibkan header: `Authorization: Bearer <token_jwt
 
 #### 4. Mutasi Transaksi (`/api/mutasi`)
 *   **`GET /api/mutasi`**
-    *   **Deskripsi:** Mengambil daftar seluruh log transaksi `finance` dari semua rekening pengguna dalam 7 hari terakhir. Output menyertakan nama rekening (`account_name`) dan tanggal lokal terformat (`yyyy-MM-dd HH:mm:ss`).
+    *   **Deskripsi:** Mengambil daftar seluruh log transaksi `finance` dari semua rekening pengguna. Mendukung filter `range` (7d, 1m, 3m) dan paginasi.
+*   **`GET /api/mutasi/account/:accountId`**
+    *   **Deskripsi:** Mengambil daftar mutasi transaksi khusus per rekening (`account`) pengguna tertentu. Menyertakan informasi detail rekening, ringkasan pemasukan & pengeluaran, filter rentang waktu (`range=7d|1m|3m|all`), filter `mutation_type`, filter `transaction_type`, serta paginasi.
+*   **`GET /api/mutasi/summary`**
+    *   **Deskripsi:** Mengambil ringkasan total pemasukan, total pengeluaran, dan net mutasi (surplus/defisit).
+*   **`GET /api/mutasi/chart-tren-saldo/:accountId`**
+    *   **Deskripsi:** Mengambil data chart **Tren Saldo** (perkembangan saldo harian & volume mutasi dana masuk/keluar) untuk rekening tertentu. Menyertakan metrik Titik Terendah, Titik Tertinggi, Pertumbuhan (persentase & nominal), serta data per hari dengan filter periode `range=7d|30d|month`.
+*   **`GET /api/mutasi/chart-aktivitas`**
+    *   **Deskripsi:** Mengambil data tren aktivitas keuangan 7 hari terakhir untuk grafik garis.
+*   **`GET /api/mutasi/recent-transaction`**
+    *   **Deskripsi:** Mengambil 5 transaksi terbaru pengguna.
 
 #### 5. Transfer Saldo (`/api/transfer`)
 *   **`POST /api/transfer`**

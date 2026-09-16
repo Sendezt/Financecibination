@@ -1,3 +1,4 @@
+// controllers\getSaldoHandler.js
 const { Account } = require("../models");
 
 const getSaldoByUserIdHandler = async (req, res) => {
@@ -86,6 +87,18 @@ const getSaldoByUserIdHandler = async (req, res) => {
 
     /**
      * =========================
+     * ACCOUNT SALDO TERBANYAK
+     * =========================
+     */
+
+    const highest_balance_account = data.reduce(
+      (max, account) =>
+        account.saldo > max.saldo ? account : max,
+      data[0]
+    );
+
+    /**
+     * =========================
      * RESPONSE
      * =========================
      */
@@ -94,6 +107,7 @@ const getSaldoByUserIdHandler = async (req, res) => {
       status: true,
       message: "Data saldo berhasil diambil",
       total_balance,
+      highest_balance_account,
       data,
     });
   } catch (error) {

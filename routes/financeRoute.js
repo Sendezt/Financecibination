@@ -6,12 +6,6 @@ const totalPengeluaranBulananHandler = require("../controllers/totalPengeluaranB
 const totalPemasukanBulananHandler = require("../controllers/totalPemasukanBulanan");
 const TotalPemasukanMingguanHandler = require("../controllers/totalPemasukanMingguan");
 const TotalPengeluaranMingguanHandler = require("../controllers/totalPengeluaranMingguan");
-const autototalPemasukanMingguanHandler = require("../controllers/autototalPemasukanMingguan");
-const autototalPengeluaranMingguanHandler = require("../controllers/autototalPengeluaranMingguan");
-const autototalPemasukanBulananHandler = require("../controllers/autototalPemasukanBulanan");
-const autototalPengeluaranBulananHandler = require("../controllers/autototalPengeluaranBulanan");
-const autototalPemasukanHarianHandler = require("../controllers/autototalPemasukanHarian");
-const autototalPengeluaranHarianHandler = require("../controllers/autototalPengeluaranHarian");
 const totalTransaksiHandler = require("../controllers/jumlahMutasi");
 const netCashflowBulananHandler = require("../controllers/netCashflowBulanan");
 
@@ -430,126 +424,6 @@ router.get("/total-pemasukan-mingguan", TotalPemasukanMingguanHandler);
  *         description: Internal server error
  */
 router.get("/total-pengeluaran-mingguan", TotalPengeluaranMingguanHandler);
-
-/**
- * @swagger
- * /api/finance/autototal-pemasukan-mingguan:
- *   get:
- *     summary: Get weekly income total automatically (current week)
- *     description: Retrieve total income grouped by account automatically based on current date.
- *     tags: [Finance Reports]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Success retrieving data
- *       401:
- *         description: Unauthorized
- *       500:
- *         description: Internal server error
- */
-router.get("/autototal-pemasukan-mingguan", autototalPemasukanMingguanHandler);
-
-/**
- * @swagger
- * /api/finance/autototal-pengeluaran-mingguan:
- *   get:
- *     summary: Get weekly expense total automatically (current week)
- *     description: Retrieve total expenses grouped by account automatically based on current date.
- *     tags: [Finance Reports]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Success retrieving data
- *       401:
- *         description: Unauthorized
- *       500:
- *         description: Internal server error
- */
-router.get(
-  "/autototal-pengeluaran-mingguan",
-  autototalPengeluaranMingguanHandler
-);
-
-/**
- * @swagger
- * /api/finance/autototal-pemasukan-bulanan:
- *   get:
- *     summary: Get monthly income total automatically (current month)
- *     description: Retrieve total income grouped by account automatically based on current date.
- *     tags: [Finance Reports]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Success retrieving data
- *       401:
- *         description: Unauthorized
- *       500:
- *         description: Internal server error
- */
-router.get("/autototal-pemasukan-bulanan", autototalPemasukanBulananHandler);
-
-/**
- * @swagger
- * /api/finance/autototal-pengeluaran-bulanan:
- *   get:
- *     summary: Get monthly expense total automatically (current month)
- *     description: Retrieve total expenses grouped by account automatically based on current date.
- *     tags: [Finance Reports]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Success retrieving data
- *       401:
- *         description: Unauthorized
- *       500:
- *         description: Internal server error
- */
-router.get(
-  "/autototal-pengeluaran-bulanan",
-  autototalPengeluaranBulananHandler
-);
-
-/**
- * @swagger
- * /api/finance/autototal-pemasukan-harian:
- *   get:
- *     summary: Get daily income total automatically (today)
- *     description: Retrieve total income grouped by account automatically based on current date.
- *     tags: [Finance Reports]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Success retrieving data
- *       401:
- *         description: Unauthorized
- *       500:
- *         description: Internal server error
- */
-router.get("/autototal-pemasukan-harian", autototalPemasukanHarianHandler);
-
-/**
- * @swagger
- * /api/finance/autototal-pengeluaran-harian:
- *   get:
- *     summary: Get daily expense total automatically (today)
- *     description: Retrieve total expenses grouped by account automatically based on current date.
- *     tags: [Finance Reports]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Success retrieving data
- *       401:
- *         description: Unauthorized
- *       500:
- *         description: Internal server error
- */
-router.get("/autototal-pengeluaran-harian", autototalPengeluaranHarianHandler);
 
 /**
  * @swagger

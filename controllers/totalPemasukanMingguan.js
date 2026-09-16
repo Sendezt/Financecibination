@@ -1,8 +1,15 @@
-const supabase = require("../middleware/supabaseClient");
+const { Account, Finance } = require("../models");
+const { Op, fn, col, literal } = require("sequelize");
 
+/**
+ * Menghitung rentang tanggal (start – end) untuk minggu tertentu
+ * di dalam bulan & tahun yang diberikan.
+ *
+ * Minggu dimulai dari Senin (ISO week).
+ */
 function getWeekRange(year, month, week) {
   const firstDayOfMonth = new Date(year, month - 1, 1);
-  const dayOfWeek = firstDayOfMonth.getDay(); // 0:Sunday, 1:Monday, ...,
+  const dayOfWeek = firstDayOfMonth.getDay(); // 0:Sunday, 1:Monday, ...
   const offset = (week - 1) * 7 - (dayOfWeek === 0 ? 6 : dayOfWeek - 1);
 
   const start = new Date(firstDayOfMonth);
@@ -29,52 +36,69 @@ const getTotalPemasukanMingguanByUserHandler = async (req, res) => {
   );
 
   try {
-    // Ambil akun user
-    const { data: accounts, error: accountError } = await supabase
-      .from("accounts")
-      .select("id, name")
-      .eq("user_id", user_id);
+    // Ambil akun milik user
+    const accounts = await Account.findAll({
+      where: { user_id },
+      attributes: ["id", "name"],
+      raw: true,
+    });
 
-    if (accountError) {
-      return res.status(500).json({
-        message: "Gagal mengambil akun pengguna",
-        error: accountError,
+    if (accounts.length === 0) {
+      return res.status(200).json({
+        status: true,
+        user_id,
+        bulan: month,
+        tahun: year,
+        minggu: week,
+        rentang_tanggal: {
+          start: start.toISOString().split("T")[0],
+          end: end.toISOString().split("T")[0],
+        },
+        data: [],
+        total_pemasukan_user: 0,
       });
     }
 
+    const accountIds = accounts.map((acc) => acc.id);
+
+    // Ambil total pemasukan per akun dalam 1 query (menghindari N+1)
+    const pemasukanPerAccount = await Finance.findAll({
+      where: {
+        account_id: { [Op.in]: accountIds },
+        mutation_type: "masuk",
+        created_at: {
+          [Op.gte]: start,
+          [Op.lt]: end,
+        },
+      },
+      attributes: [
+        "account_id",
+        [fn("COALESCE", fn("SUM", col("amount")), 0), "total_pemasukan"],
+      ],
+      group: ["account_id"],
+      raw: true,
+    });
+
+    // Buat map account_id -> total_pemasukan untuk lookup cepat
+    const pemasukanMap = {};
+    for (const row of pemasukanPerAccount) {
+      pemasukanMap[row.account_id] = parseFloat(row.total_pemasukan);
+    }
+
+    // Susun hasil per akun
     let total_pemasukan_user = 0;
-    const result = [];
-
-    for (const account of accounts) {
-      const { data: pemasukan, error } = await supabase
-        .from("finance")
-        .select("amount, created_at")
-        .eq("account_id", account.id)
-        .eq("mutation_type", "masuk")
-        .gte("created_at", start.toISOString())
-        .lt("created_at", end.toISOString());
-
-      if (error) {
-        return res
-          .status(500)
-          .json({ message: "Gagal mengambil data finance", error });
-      }
-
-      const total_pemasukan = pemasukan.reduce(
-        (sum, item) => sum + parseFloat(item.amount),
-        0
-      );
-
+    const result = accounts.map((account) => {
+      const total_pemasukan = pemasukanMap[account.id] || 0;
       total_pemasukan_user += total_pemasukan;
 
-      result.push({
+      return {
         account_id: account.id,
         nama_rekening: account.name,
-        total_pemasukan: total_pemasukan,
-      });
-    }
+        total_pemasukan,
+      };
+    });
 
-    res.status(200).json({
+    return res.status(200).json({
       status: true,
       user_id,
       bulan: month,
@@ -88,9 +112,10 @@ const getTotalPemasukanMingguanByUserHandler = async (req, res) => {
       total_pemasukan_user,
     });
   } catch (err) {
-    console.error("Error:", err);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("Get Total Pemasukan Mingguan Error:", err);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 
 module.exports = getTotalPemasukanMingguanByUserHandler;
+

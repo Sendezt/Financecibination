@@ -22,6 +22,7 @@ const tambahRekening = require("../controllers/tambahRekening");
  *             properties:
  *               name:
  *                 type: string
+ *                 description: Account/rekening name
  *                 example: BCA John
  *     responses:
  *       201:
@@ -40,23 +41,62 @@ const tambahRekening = require("../controllers/tambahRekening");
  *                 data:
  *                   type: object
  *                   properties:
+ *                     id:
+ *                       type: string
+ *                       format: uuid
+ *                       example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
  *                     account_name:
  *                       type: string
  *                       example: BCA John
+ *                     saldo:
+ *                       type: number
+ *                       example: 0
+ *                     created_at:
+ *                       type: string
+ *                       format: date-time
+ *                       example: "2026-09-15T12:00:00.000Z"
  *       400:
- *         description: Bad request (missing user ID or account name)
+ *         description: Bad request (missing or empty account name)
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
+ *                 status:
+ *                   type: boolean
+ *                   example: false
  *                 message:
  *                   type: string
- *                   example: User ID dan Nama rekening wajib diisi.
+ *                   example: Nama rekening wajib diisi
  *       401:
- *         description: Unauthorized
+ *         description: Unauthorized (missing or invalid token)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: User tidak terautentikasi
  *       500:
  *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Gagal menambahkan rekening
+ *                 error:
+ *                   type: string
+ *                   example: Error details
  */
 router.post("/", tambahRekening);
 
