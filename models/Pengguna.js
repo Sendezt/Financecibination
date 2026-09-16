@@ -18,7 +18,7 @@ const Pengguna = sequelize.define(
 
     password: {
       type: DataTypes.TEXT,
-      allowNull: false,
+      allowNull: true, // nullable: user OAuth Google tidak punya password
     },
 
     full_name: {
@@ -34,8 +34,19 @@ const Pengguna = sequelize.define(
 
     wa_number: {
       type: DataTypes.TEXT,
-      allowNull: false,
+      allowNull: true, // nullable: user Google mengisi WA lewat complete-profile
       unique: true,
+    },
+
+    google_id: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      unique: true,
+    },
+
+    avatar_url: {
+      type: DataTypes.TEXT,
+      allowNull: true,
     },
   },
   {

@@ -2,6 +2,9 @@ const express = require("express");
 const router = express.Router();
 const loginHandler = require("../controllers/authController/loginHandler");
 const registerHandler = require("../controllers/authController/registerHandler");
+const googleAuthHandler = require("../controllers/authController/googleAuthHandler");
+const completeProfileHandler = require("../controllers/authController/completeProfileHandler");
+const verifyToken = require("../middleware/verifyToken");
 
 /**
  * @swagger
@@ -152,5 +155,185 @@ router.post("/login", loginHandler);
  *         description: Internal server error
  */
 router.post("/register", registerHandler);
+
+/**
+ * @swagger
+ * /api/auth/google:
+ *   post:
+ *     summary: Login atau Register menggunakan Google OAuth
+ *     description: >
+ *       Memverifikasi id_token dari Google Sign-In di sisi frontend.
+ *       Terdapat 3 skenario otomatis:
+ *       1. **Login** — jika google_id sudah terdaftar, langsung login.
+ *       2. **Account Linking** — jika email sudah ada (dari register biasa), tautkan google_id ke akun tersebut lalu login.
+ *       3. **Auto-Register** — jika email belum ada, buat akun baru dan login.
+ *
+ *       Jika `is_profile_complete: false` pada response, frontend wajib mengarahkan
+ *       pengguna ke halaman pengisian `wa_number` sebelum mengakses fitur utama.
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - id_token
+ *             properties:
+ *               id_token:
+ *                 type: string
+ *                 description: id_token yang didapat dari Google Sign-In di sisi frontend (Google Identity Services)
+ *                 example: "eyJhbGciOiJSUzI1NiIsImtpZCI6Ij..."
+ *     responses:
+ *       200:
+ *         description: Login atau account linking berhasil
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Login dengan Google berhasil"
+ *                 is_profile_complete:
+ *                   type: boolean
+ *                   description: >
+ *                     false jika wa_number belum diisi. Frontend harus redirect ke
+ *                     halaman complete-profile sebelum mengakses fitur utama.
+ *                   example: true
+ *                 token:
+ *                   type: string
+ *                   description: JWT Bearer token valid 7 hari
+ *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       example: "user-uuid"
+ *                     full_name:
+ *                       type: string
+ *                       example: "John Doe"
+ *                     email:
+ *                       type: string
+ *                       example: "john@gmail.com"
+ *                     role:
+ *                       type: string
+ *                       example: "user"
+ *                     avatar_url:
+ *                       type: string
+ *                       nullable: true
+ *                       example: "https://lh3.googleusercontent.com/a/..."
+ *                     wa_number:
+ *                       type: string
+ *                       nullable: true
+ *                       example: null
+ *       201:
+ *         description: Auto-register akun baru berhasil
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Registrasi dengan Google berhasil"
+ *                 is_profile_complete:
+ *                   type: boolean
+ *                   example: false
+ *                 token:
+ *                   type: string
+ *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *                 data:
+ *                   type: object
+ *       400:
+ *         description: id_token tidak dikirimkan
+ *       401:
+ *         description: id_token tidak valid atau email Google belum diverifikasi
+ *       500:
+ *         description: Internal server error
+ */
+router.post("/google", googleAuthHandler);
+
+/**
+ * @swagger
+ * /api/auth/complete-profile:
+ *   put:
+ *     summary: Lengkapi profil pengguna setelah OAuth Google
+ *     description: >
+ *       Digunakan oleh pengguna yang register via Google dan belum mengisi wa_number.
+ *       Endpoint ini terproteksi JWT. Jika `is_profile_complete: false` diterima dari
+ *       `/api/auth/google`, frontend wajib memanggil endpoint ini sebelum pengguna
+ *       dapat mengakses fitur utama aplikasi.
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - wa_number
+ *             properties:
+ *               wa_number:
+ *                 type: string
+ *                 description: Nomor WhatsApp pengguna (unik)
+ *                 example: "081234567890"
+ *               full_name:
+ *                 type: string
+ *                 description: Opsional — update nama jika diperlukan
+ *                 example: "John Doe"
+ *     responses:
+ *       200:
+ *         description: Profil berhasil dilengkapi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Profil berhasil dilengkapi"
+ *                 is_profile_complete:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       example: "user-uuid"
+ *                     full_name:
+ *                       type: string
+ *                       example: "John Doe"
+ *                     email:
+ *                       type: string
+ *                       example: "john@gmail.com"
+ *                     wa_number:
+ *                       type: string
+ *                       example: "081234567890"
+ *                     avatar_url:
+ *                       type: string
+ *                       nullable: true
+ *                       example: "https://lh3.googleusercontent.com/a/..."
+ *       400:
+ *         description: wa_number tidak dikirim atau sudah dipakai akun lain
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+router.put("/complete-profile", verifyToken, completeProfileHandler);
 
 module.exports = router;
