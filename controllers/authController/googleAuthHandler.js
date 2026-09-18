@@ -21,6 +21,20 @@ const issueJWT = (user) => {
 };
 
 /**
+ * Helper: set HttpOnly cookie dengan token JWT
+ */
+const setAuthCookie = (res, token) => {
+  const isProduction = process.env.NODE_ENV === "production";
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "strict" : "lax",
+    path: "/",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 hari dalam ms
+  });
+};
+
+/**
  * Helper: verifikasi id_token dari Google
  * Mengembalikan payload Google jika valid, melempar error jika tidak
  */
@@ -85,6 +99,7 @@ const googleAuthHandler = async (req, res) => {
     if (user) {
       // === SKENARIO 1: Login — user Google sudah terdaftar ===
       const token = issueJWT(user);
+      setAuthCookie(res, token);
 
       return res.status(200).json({
         status: true,
@@ -113,6 +128,7 @@ const googleAuthHandler = async (req, res) => {
       });
 
       const token = issueJWT(user);
+      setAuthCookie(res, token);
 
       return res.status(200).json({
         status: true,
@@ -142,6 +158,7 @@ const googleAuthHandler = async (req, res) => {
     });
 
     const token = issueJWT(newUser);
+    setAuthCookie(res, token);
 
     return res.status(201).json({
       status: true,

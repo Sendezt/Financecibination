@@ -4,6 +4,8 @@ const loginHandler = require("../controllers/authController/loginHandler");
 const registerHandler = require("../controllers/authController/registerHandler");
 const googleAuthHandler = require("../controllers/authController/googleAuthHandler");
 const completeProfileHandler = require("../controllers/authController/completeProfileHandler");
+const meHandler = require("../controllers/authController/meHandler");
+const logoutHandler = require("../controllers/authController/logoutHandler");
 const verifyToken = require("../middleware/verifyToken");
 
 /**
@@ -26,10 +28,10 @@ const verifyToken = require("../middleware/verifyToken");
  *               email:
  *                 type: string
  *                 format: email
- *                 example: user@example.com
+ *                 example: user@testing1.com
  *               password:
  *                 type: string
- *                 example: secretpassword
+ *                 example: user@testing1.com
  *     responses:
  *       200:
  *         description: Login successful
@@ -335,5 +337,85 @@ router.post("/google", googleAuthHandler);
  *         description: Internal server error
  */
 router.put("/complete-profile", verifyToken, completeProfileHandler);
+
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     summary: Cek status autentikasi dan data user yang sedang login
+ *     description: >
+ *       Membaca JWT dari HttpOnly cookie (bukan Authorization header).
+ *       Digunakan oleh frontend untuk mengecek apakah user sudah authenticated
+ *       dan mengambil data user (full_name, wa_number, email) tanpa perlu
+ *       membaca cookie secara langsung via JavaScript.
+ *     tags: [Authentication]
+ *     responses:
+ *       200:
+ *         description: User sudah authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     full_name:
+ *                       type: string
+ *                       example: John Doe
+ *                     wa_number:
+ *                       type: string
+ *                       example: "08123456789"
+ *                     email:
+ *                       type: string
+ *                       example: john@example.com
+ *                     role:
+ *                       type: string
+ *                       example: user
+ *                     avatar_url:
+ *                       type: string
+ *                       nullable: true
+ *       401:
+ *         description: Tidak authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Unauthorized
+ */
+router.get("/me", verifyToken, meHandler);
+
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Logout — hapus HttpOnly cookie token
+ *     description: Menghapus cookie token sehingga user tidak lagi authenticated.
+ *     tags: [Authentication]
+ *     responses:
+ *       200:
+ *         description: Logout berhasil
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Logged out successfully
+ */
+router.post("/logout", logoutHandler);
 
 module.exports = router;

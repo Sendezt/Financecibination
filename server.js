@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
 const sequelize = require("./config/database");
 const rateLimit = require("express-rate-limit");
 const authHandler = require("./routes/authRoute");
@@ -17,7 +18,22 @@ const PORT = process.env.PORT || 3000;
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
 
-app.use(cors());
+const allowedOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(",").map((o) => o.trim())
+  : ["http://localhost:5173"];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Izinkan request tanpa origin (misal: curl, Postman, server-to-server)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error(`CORS: origin '${origin}' tidak diizinkan`));
+    },
+    credentials: true,
+  }),
+);
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -89,7 +105,8 @@ app.use("/api/getSaldo", verifyToken, getSaldo);
 app.use("/api/transfer", verifyToken, transfer);
 
 if (process.env.NODE_ENV !== "production") {
-  sequelize.authenticate()
+  sequelize
+    .authenticate()
     .then(() => {
       console.log("Database PostgreSQL berhasil terhubung.");
       app.listen(PORT, () => {

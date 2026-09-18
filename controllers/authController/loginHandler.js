@@ -53,6 +53,16 @@ const loginHandler = async (req, res) => {
       },
     );
 
+    // Set HttpOnly cookie (7 hari = 604800 detik)
+    const isProduction = process.env.NODE_ENV === "production";
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? "strict" : "lax",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 hari dalam ms
+    });
+
     return res.status(200).json({
       status: true,
       message: "Login berhasil",

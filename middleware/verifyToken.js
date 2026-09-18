@@ -2,22 +2,32 @@ require("dotenv").config();
 const jwt = require("jsonwebtoken");
 
 const verifyToken = (req, res, next) => {
-  const authHeader = req.headers.authorization;
+  // Prioritas: HttpOnly cookie → fallback ke Authorization: Bearer header
+  const token =
+    req.cookies?.token ||
+    (req.headers.authorization?.startsWith("Bearer ")
+      ? req.headers.authorization.split(" ")[1]
+      : null);
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!token) {
     return res
       .status(401)
-      .json({ message: "Access denied. No token provided." });
+      .json({ status: false, message: "Access denied. No token provided." });
   }
-
-  const token = authHeader.split(" ")[1];
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
     req.user = decoded; // Menyimpan payload token (id, email, role, dll)
     next();
   } catch (error) {
-    return res.status(403).json({ message: "Invalid or expired token." });
+    if (error.name === "TokenExpiredError") {
+      return res
+        .status(401)
+        .json({ status: false, message: "Token sudah kedaluwarsa." });
+    }
+    return res
+      .status(403)
+      .json({ status: false, message: "Token tidak valid." });
   }
 };
 
