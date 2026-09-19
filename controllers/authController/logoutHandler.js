@@ -9,7 +9,7 @@ const logoutHandler = (req, res) => {
   res.cookie("token", "", {
     httpOnly: true,
     secure: isProduction,
-    sameSite: isProduction ? "strict" : "lax",
+    sameSite: isProduction ? "none" : "lax",
     path: "/",
     maxAge: 0, // Hapus cookie segera
   });
