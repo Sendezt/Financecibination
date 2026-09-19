@@ -20,7 +20,7 @@ const swaggerJsdoc = require("swagger-jsdoc");
 
 const allowedOrigins = process.env.FRONTEND_URL
   ? process.env.FRONTEND_URL.split(",").map((o) => o.trim())
-  : ["http://localhost:5173"];
+  : ["http://localhost:5173", "https://fe-financecibination.vercel.app"];
 
 app.use(
   cors({
